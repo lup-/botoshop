@@ -1,0 +1,35 @@
+version: "3"
+
+services:
+  nginx:
+    image: nginx
+    ports:
+      - ${HTTP_PORT}:80
+    volumes:
+      - ./frontend/dist:/var/www/public
+      - ./etc/nginx/site.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - backend
+
+  backend:
+    image: node
+    ports:
+      - 3000:3000
+    depends_on:
+      - mongo
+    volumes:
+      - ./backend:/var/www
+    working_dir: /var/www
+    environment:
+      - NODE_ENV=development
+      - MONGO_HOST=cv_mongo
+      - MONGO_DB=cv
+    command: npm run start
+
+  mongo:
+    image: mongo
+    container_name: 'cv_mongo'
+    volumes:
+      - ./etc/database:/data/db
+    ports:
+      - ${MONGO_PORT}:27017
