@@ -14,7 +14,6 @@ services:
   backend:
     image: node
     ports:
-      - 3000:3000
       - ${BACKEND_DEBUG_PORT}:9229
     depends_on:
       - mongo
