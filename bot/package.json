@@ -5,7 +5,7 @@
   "main": "bot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node --inspect-brk=0.0.0.0 bot.js"
+    "start": "node --inspect=0.0.0.0 bot.js"
   },
   "author": "Alexander Pavlov <lup.mail@gmail.com>",
   "license": "ISC",
