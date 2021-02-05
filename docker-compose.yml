@@ -15,6 +15,7 @@ services:
     image: node
     ports:
       - 3000:3000
+      - ${BACKEND_DEBUG_PORT}:9229
     depends_on:
       - mongo
     volumes:
@@ -22,13 +23,41 @@ services:
     working_dir: /var/www
     environment:
       - NODE_ENV=development
-      - MONGO_HOST=cv_mongo
-      - MONGO_DB=cv
+      - MONGO_HOST=mongo
+      - MONGO_DB=signals_bot
+    command: npm run start
+
+  bot:
+    image: node
+    ports:
+      - ${BOT_DEBUG_PORT}:9229
+    depends_on:
+      - mongo
+    volumes:
+      - ./bot:/var/bot
+    working_dir: /var/bot
+    environment:
+      - NODE_ENV=development
+      - MONGO_HOST=mongo
+      - MONGO_DB=signals_bot
+      - BOT_TOKEN=${BOT_TOKEN}
+      - MAILINGS_CHECK_INTERVAL_SEC=${MAILINGS_CHECK_INTERVAL_SEC}
+      - PAYMENT_CHECK_INTERVAL_SEC=${PAYMENT_CHECK_INTERVAL_SEC}
+      - PAYMENT_STATUS_CHECK_INTERVAL_SEC=${PAYMENT_STATUS_CHECK_INTERVAL_SEC}
+      - TEST_USER_ID=${TEST_USER_ID}
+      - TEST_CHAT_ID=${TEST_CHAT_ID}
+      - MANAGER_CHAT_ID=${MANAGER_CHAT_ID}
+      - TEST_QUEUE_SIZE=${TEST_QUEUE_SIZE}
+      - START_DELAY_SECONDS=${START_DELAY_SECONDS}
+      - TGAPI_ROOT=${TGAPI_ROOT}
+      - SOURCE_CHANNEL_ID=${SOURCE_CHANNEL_ID}
+      - YOO_SHOP_ID=${YOO_SHOP_ID}
+      - YOO_SECRET_KEY=${YOO_SECRET_KEY}
+      - YOO_TEST=${YOO_TEST}
     command: npm run start
 
   mongo:
     image: mongo
-    container_name: 'cv_mongo'
     volumes:
       - ./etc/database:/data/db
     ports:

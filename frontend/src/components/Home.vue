@@ -1,7 +1,11 @@
 <template>
-    <div>
-        Вероятно вам должны были прислать ссылку на резюме, но что-то пошло не так
-    </div>
+    <v-container class="fill-height align-center justify-center">
+        <v-card>
+            <v-card-text>
+                Добро пожаловать!
+            </v-card-text>
+        </v-card>
+    </v-container>
 </template>
 
 <script>

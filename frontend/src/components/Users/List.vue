@@ -1,7 +1,9 @@
 <template>
     <v-container class="fill-height align-start">
         <v-row :align="isEmpty || isLoading ? 'center' : 'start'" :justify="isEmpty || isLoading ? 'center' : 'start'">
-            <v-btn fab bottom right fixed large color="primary" @click="$router.push({name: 'New'})">
+            <v-btn fab bottom right fixed large color="primary"
+                    @click="$router.push({name: 'userNew'})"
+            >
                 <v-icon>mdi-plus</v-icon>
             </v-btn>
 
@@ -9,13 +11,13 @@
                 <v-data-table
                         dense
                         :headers="headers"
-                        :items="cvs"
+                        :items="users"
                         :loading="isLoading"
                         :items-per-page="50"
                 >
                     <template v-slot:item.actions="{ item }">
-                        <v-btn icon small @click="gotoCvEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
-                        <v-btn icon small @click="deleteCv(item)"><v-icon>mdi-delete</v-icon></v-btn>
+                        <v-btn icon small @click="gotoUserEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
+                        <v-btn icon small @click="deleteUser(item)"><v-icon>mdi-delete</v-icon></v-btn>
                     </template>
                 </v-data-table>
             </v-col>
@@ -25,38 +27,39 @@
 
 <script>
     export default {
-        name: "List",
+        name: "UsersList",
         data() {
             return {
                 isLoading: true,
                 headers: [
                     {text: 'ФИО', value: 'name'},
+                    {text: 'Логин', value: 'login'},
                     {text: 'Действия', value: 'actions', sortable: false},
                 ]
             }
         },
         async mounted() {
-            await this.loadCvs();
+            await this.loadUsers();
         },
         methods: {
-            deleteCv(cv) {
-                this.$store.dispatch('deleteCv', cv);
+            deleteUser(user) {
+                this.$store.dispatch('deleteUser', user);
             },
-            async loadCvs() {
+            async loadUsers() {
                 this.isLoading = true;
-                await this.$store.dispatch('loadCvs', {});
+                await this.$store.dispatch('loadUsers', {});
                 this.isLoading = false;
             },
-            gotoCvEdit(id) {
-                this.$router.push({name: 'Edit', params: {id}});
+            gotoUserEdit(id) {
+                this.$router.push({name: 'userEdit', params: {id}});
             },
         },
         computed: {
-            cvs() {
-                return this.isLoading ? [] : this.$store.state.cv.list;
+            users() {
+                return this.isLoading ? [] : this.$store.state.user.list;
             },
             isEmpty() {
-                return this.cvs.length === 0 && this.isLoading === false;
+                return this.users.length === 0 && this.isLoading === false;
             }
         }
     }
