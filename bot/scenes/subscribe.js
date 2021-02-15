@@ -33,6 +33,7 @@ module.exports = function ({payment}) {
             );
         }
         catch (e) {
+            console.log(e.toString(), e);
             let buttons = [{text: 'Попробовать еще раз', code: 'retry'}];
             return ctx.reply(`При создании платежа возникла ошибка:
 ${e.toString()}`, menu(buttons));
