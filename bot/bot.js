@@ -19,7 +19,9 @@ let app = setupBot(BOT_TOKEN)
     .addSaveActivity()
     .addScenes(false, {payment})
     .addRoute('on', 'channel_post', async (ctx, next) => {
-        let isSourceChannelMessage = ctx.channelPost && ctx.channelPost.chat && ctx.channelPost.chat.username === SOURCE_CHANNEL_ID;
+        let isSourceChannelMessage = ctx.channelPost && ctx.channelPost.chat &&
+            (ctx.channelPost.chat.username === SOURCE_CHANNEL_ID || ctx.channelPost.chat.id.toString() === SOURCE_CHANNEL_ID.toString());
+
         if (isSourceChannelMessage) {
             let isCreated = await mailer.createMailing(ctx.channelPost);
             if (isCreated) {
