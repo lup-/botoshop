@@ -53,6 +53,7 @@ services:
       - YOO_SHOP_ID=${YOO_SHOP_ID}
       - YOO_SECRET_KEY=${YOO_SECRET_KEY}
       - YOO_TEST=${YOO_TEST}
+      - PAYMENT_PRICE=${PAYMENT_PRICE}
     command: npm run start
 
   mongo:

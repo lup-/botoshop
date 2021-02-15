@@ -12,6 +12,7 @@ const YOO_BASE_URL = 'https://api.yookassa.ru/v3/';
 const YOO_SHOP_ID = process.env.YOO_SHOP_ID;
 const YOO_SECRET_KEY = process.env.YOO_SECRET_KEY;
 const YOO_TEST = process.env.YOO_TEST === '1';
+const PAYMENT_PRICE = process.env.PAYMENT_PRICE ? parseFloat(process.env.PAYMENT_PRICE) : 900;
 const ORDER_DESCRIPTION = 'Оплата подписки';
 
 const telegram = (new Telegraf(BOT_TOKEN)).telegram;
@@ -37,7 +38,7 @@ module.exports = class Payment {
     }
 
     async getPrice() {
-        return 900;
+        return PAYMENT_PRICE;
     }
     getReturnUrl(ctx) {
         return `https://t.me/${ctx.me}`;
