@@ -1,6 +1,7 @@
 const { Scenes } = require('telegraf');
 const { BaseScene } = Scenes;
 const {menu} = require('../lib/helpers');
+const moment = require('moment');
 
 const DISCLAIMER_TEXT = `Этот бот будет присылать торговые сигналы`;
 
@@ -12,9 +13,13 @@ module.exports = function ({payment}) {
 
         if (messageShown) {
             let buttons = [];
+            let text = 'Куда дальше?';
             let isSubscribed = await payment.isSubscribed(ctx.session.userId);
 
             if (isSubscribed) {
+                let profile = ctx.session.profile;
+                let subscribedTo = moment.unix(profile.subscribedTill).format('DD.MM.YYYY HH:mm')
+                text = `Ваша подписка действует до ${subscribedTo}`;
                 buttons.push({code: 'unsubscribe', text: 'Отказаться от подписки'});
             }
             else {
@@ -22,8 +27,8 @@ module.exports = function ({payment}) {
             }
 
             return ctx.safeReply(
-                ctx => ctx.editMessageText('Куда дальше?', menu(buttons)),
-                ctx => ctx.reply('Куда дальше?', menu(buttons)),
+                ctx => ctx.editMessageText(text, menu(buttons)),
+                ctx => ctx.reply(text, menu(buttons)),
                 ctx
             );
         }
