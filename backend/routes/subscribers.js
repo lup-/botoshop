@@ -21,5 +21,24 @@ module.exports = {
         response[ITEMS_NAME] = items;
 
         ctx.body = response;
-    }
+    },
+    async update(ctx) {
+        let db = await getDb();
+        let subscriberData = ctx.request.body.subscriber;
+        let id = subscriberData.id;
+
+        if (!id) {
+            ctx.body = { subscriber: false };
+            return;
+        }
+
+        if (subscriberData._id) {
+            delete subscriberData._id;
+        }
+
+        let updateResult = await db.collection(COLLECTION_NAME).findOneAndReplace({id}, subscriberData, {returnOriginal: false});
+        let subscriber = updateResult.value || false;
+
+        ctx.body = { subscriber };
+    },
 }

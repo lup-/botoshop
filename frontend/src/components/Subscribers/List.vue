@@ -14,6 +14,21 @@
                         :item-class="itemClass"
                         locale="ru"
                 >
+                    <template v-slot:item.subscribed="{ item }">
+                        <v-simple-checkbox
+                                v-model="item.subscribed"
+                                disabled
+                        ></v-simple-checkbox>
+                    </template>
+                    <template v-slot:item.blocked="{ item }">
+                        <v-simple-checkbox
+                                v-model="item.blocked"
+                                disabled
+                        ></v-simple-checkbox>
+                    </template>
+                    <template v-slot:item.actions="{ item }">
+                        <v-btn icon small @click="gotoSubscriberEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
+                    </template>
                 </v-data-table>
             </v-col>
         </v-row>
@@ -37,6 +52,10 @@
                     {text: 'Имя', value: 'firstName'},
                     {text: 'Имя пользователя', value: 'userName'},
                     {text: 'Последний платеж', value: 'lastPayment'},
+                    {text: 'Подписка', value: 'subscribed'},
+                    {text: 'Подписка до', value: 'subscribedTill'},
+                    {text: 'Блокировка', value: 'blocked'},
+                    {text: 'Действия', value: 'actions', sortable: false},
                 ]
             }
         },
@@ -46,13 +65,16 @@
         methods: {
             async loadItems() {
                 this.isLoading = true;
-                await this.$store.dispatch('loadSubscribers', {subscribed: true});
+                await this.$store.dispatch('loadSubscribers');
                 this.isLoading = false;
             },
             itemClass(item) {
                 let monthAgo = moment().subtract(1, 'month').unix();
                 return item.lastPaymentTimestamp < monthAgo ? 'row-outdated' : '';
-            }
+            },
+            gotoSubscriberEdit(id) {
+                this.$router.push({name: 'subscriberEdit', params: {id}});
+            },
         },
         computed: {
             items() {
@@ -60,6 +82,8 @@
                     let newItem = clone(item);
                     newItem.lastPaymentTimestamp = item.lastPayment;
                     newItem.lastPayment = item.lastPayment ? moment.unix(item.lastPayment).format('DD.MM.YYYY HH:mm') : '-';
+                    newItem.subscribedTillTimestamp = item.subscribedTill;
+                    newItem.subscribedTill = item.subscribedTill ? moment.unix(item.subscribedTill).format('DD.MM.YYYY HH:mm') : '-';
                     return newItem;
                 });
             },

@@ -161,12 +161,13 @@ module.exports = class Payment {
     }
     async getPendingPaymentProfiles() {
         let db = await getDb();
-        let monthAgo = moment().subtract(1, 'month').unix();
-        return db.collection('profiles').aggregate([
-            { $match: {subscribed: true} },
-            { $addFields: {paymentOverdue: {$cmp: [ "$lastPayment", monthAgo ]}} },
-            { $match: {paymentOverdue: -1} }
-        ]).toArray();
+        let now = moment().unix();
+        return db.collection('profiles').find({
+            subscribed: true,
+            blocked: {$in: [null, false]},
+            subscribedTill: {$lt: now},
+            lastPayment: {$gt: 0},
+        }).toArray();
     }
     async getProcessingPayments() {
         let db = await getDb();
@@ -214,8 +215,10 @@ module.exports = class Payment {
         await db.collection('payments').updateOne({id: payment.id}, {$set: {finished: moment().unix()}});
 
         if (payment.status === 'succeeded') {
+            let nextMonth = moment().add(1, 'month').unix();
             await db.collection('profiles').updateOne({id: profile.id}, {$set: {
                 subscribed: true,
+                subscribedTill: nextMonth,
                 lastPayment: moment().unix()
             }});
             await telegram.sendMessage(chatId, `Мы приняли ваш платеж, спасибо! Вы подписаны`);
@@ -264,10 +267,29 @@ module.exports = class Payment {
         return db.collection('profiles').updateOne({id: profile.id}, {$set: {subscribed: false}});
     }
 
+    async subscribeWithoutPayment(userId) {
+        let db = await getDb();
+        return db.collection('profiles').updateOne({userId}, {$set: {subscribed: true}});
+    }
+
     async isSubscribed(userId) {
+        let now = moment().unix();
         let db = await getDb();
         let profile = await db.collection('profiles').findOne({userId});
-        return Boolean(profile && profile.subscribed);
+        let hasDateLimit = profile && profile.subscribedTill && profile.subscribedTill > 0;
+        let hasNoDateLimit = !hasDateLimit;
+        let dateIsNotExpired = hasDateLimit && profile.subscribedTill >= now;
+        return Boolean(profile && profile.subscribed && (hasNoDateLimit || dateIsNotExpired) );
+    }
+
+    async needsPaymentToSubscribe(userId) {
+        let now = moment().unix();
+        let db = await getDb();
+        let profile = await db.collection('profiles').findOne({userId});
+        let hasDateLimit = profile && profile.subscribedTill && profile.subscribedTill > 0;
+        let isNewSubscriber = !hasDateLimit;
+        let dateIsExpired = hasDateLimit && profile.subscribedTill < now;
+        return isNewSubscriber || dateIsExpired;
     }
 
     async removeSubscribeByUserId(userId) {

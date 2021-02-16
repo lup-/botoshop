@@ -19,18 +19,27 @@ module.exports = function ({payment}) {
 
     scene.action('agree', async ctx => {
         try {
-            let price = await payment.getPrice();
-            let paymentUrl = await payment.addPaymentAndGetPaymentUrl(ctx, price);
-            let text = `После нажатия на кнопку вы будете направлены на страницу для совершения оплаты.
-Успешно завершив процесс оплаты вы соглашаетесь на автоматическое продление подписки за ${price} руб/месяц.
-    
-Пожалуйста, используйте кнопку эту оплаты только один раз`
-            let buttons = [{text: `Оплатить ${price} руб`, url: paymentUrl}];
-            return ctx.safeReply(
-                ctx => ctx.editMessageText(text, menu(buttons)),
-                ctx => ctx.reply(text, menu(buttons)),
-                ctx
-            );
+            let userId = ctx.session.userId;
+            let needsPayment = await payment.needsPaymentToSubscribe(userId);
+
+            if (needsPayment) {
+                let price = await payment.getPrice();
+                let paymentUrl = await payment.addPaymentAndGetPaymentUrl(ctx, price);
+                let text = `После нажатия на кнопку вы будете направлены на страницу для совершения оплаты.
+    Успешно завершив процесс оплаты вы соглашаетесь на автоматическое продление подписки за ${price} руб/месяц.
+        
+    Пожалуйста, используйте кнопку эту оплаты только один раз`
+                let buttons = [{text: `Оплатить ${price} руб`, url: paymentUrl}];
+                return ctx.safeReply(
+                    ctx => ctx.editMessageText(text, menu(buttons)),
+                    ctx => ctx.reply(text, menu(buttons)),
+                    ctx
+                );
+            }
+            else {
+                await payment.subscribeWithoutPayment(userId);
+                ctx.reply(`Спасибо за подписку! Дополнительный платеж пока не нужен`);
+            }
         }
         catch (e) {
             console.log(e.toString(), e);

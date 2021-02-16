@@ -67,12 +67,15 @@ module.exports = class Mailer {
         }
 
         let db = await getDb();
-        let monthAgo = moment().subtract(1, 'month').unix();
-        let foundUsers = await db.collection('profiles').aggregate([
-            { $match: {subscribed: true} },
-            { $addFields: {paymentOverdue: {$cmp: [ "$lastPayment", monthAgo ]}} },
-            { $match: {paymentOverdue: {$ne: -1}} }
-        ]).toArray();
+        let now = moment().unix();
+        let foundUsers = await db.collection('profiles').find({
+            subscribed: true,
+            blocked: {$in: [null, false]},
+            $or: [
+                {subscribedTill: {$gte: now}},
+                {subscribedTill: {$in: [null, false, 0]}}
+            ]
+        }).toArray();
 
         return foundUsers.map(profile => ({
             mailing: mailing.id,

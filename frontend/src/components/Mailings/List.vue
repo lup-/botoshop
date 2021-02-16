@@ -8,7 +8,6 @@
                         :items="mailings"
                         :loading="isLoading"
                         :items-per-page="50"
-                        :item-class="itemClass"
                         multi-sort
                         :sort-by="['created']"
                         :sort-desc="[true]"
@@ -102,5 +101,4 @@
 </script>
 
 <style>
-    .row-archived {color: darkgray}
 </style>

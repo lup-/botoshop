@@ -24,7 +24,8 @@ router
     .post('/api/payment/list', payments.list);
 
 router
-    .post('/api/subscriber/list', subscribers.list);
+    .post('/api/subscriber/list', subscribers.list)
+    .post('/api/subscriber/update', subscribers.update);
 
 router
     .post('/api/user/list', users.list)

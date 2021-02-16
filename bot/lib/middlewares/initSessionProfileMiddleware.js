@@ -44,6 +44,7 @@ module.exports = function () {
         ctx.session.chatId = chatInfo.id;
 
         let defaultProfile = {
+            id: userId,
             userId,
             chatId: chatInfo.id,
             firstName: fromInfo.first_name,
