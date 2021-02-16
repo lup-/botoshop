@@ -26,6 +26,12 @@
                                 disabled
                         ></v-simple-checkbox>
                     </template>
+                    <template v-slot:item.autoSubscribe="{ item }">
+                        <v-simple-checkbox
+                                v-model="item.autoSubscribe"
+                                disabled
+                        ></v-simple-checkbox>
+                    </template>
                     <template v-slot:item.actions="{ item }">
                         <v-btn icon small @click="gotoSubscriberEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
                     </template>
@@ -54,6 +60,7 @@
                     {text: 'Последний платеж', value: 'lastPayment'},
                     {text: 'Подписка', value: 'subscribed'},
                     {text: 'Подписка до', value: 'subscribedTill'},
+                    {text: 'Автопродление', value: 'autoSubscribe'},
                     {text: 'Блокировка', value: 'blocked'},
                     {text: 'Действия', value: 'actions', sortable: false},
                 ]

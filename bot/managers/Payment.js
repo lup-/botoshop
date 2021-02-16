@@ -12,7 +12,8 @@ const YOO_BASE_URL = 'https://api.yookassa.ru/v3/';
 const YOO_SHOP_ID = process.env.YOO_SHOP_ID;
 const YOO_SECRET_KEY = process.env.YOO_SECRET_KEY;
 const YOO_TEST = process.env.YOO_TEST === '1';
-const PAYMENT_PRICE = process.env.PAYMENT_PRICE ? parseFloat(process.env.PAYMENT_PRICE) : 900;
+const FALLBACK_PAYMENT_PRICE = process.env.PAYMENT_PRICE ? parseFloat(process.env.FALLBACK_PAYMENT_PRICE) : 900;
+const USE_REPEATING_PAYMENTS = process.env.USE_REPEATING_PAYMENTS === '1';
 const ORDER_DESCRIPTION = 'Оплата подписки';
 
 const telegram = (new Telegraf(BOT_TOKEN)).telegram;
@@ -22,10 +23,9 @@ module.exports = class Payment {
         this.runLoop = false;
         this.stopCallback = false;
         this.profileStopCallback = false;
+        this.remindStopCallback = false;
     }
     stop() {
-        this.runLoop = false;
-
         let waitPayments = new Promise(resolve => {
             this.stopCallback = resolve;
         });
@@ -34,11 +34,31 @@ module.exports = class Payment {
             this.profileStopCallback = resolve;
         });
 
-        return Promise.all([waitPayments, waitStatus]);
+        let waitReminds = new Promise(resolve => {
+            this.remindStopCallback = resolve;
+        });
+
+        this.runLoop = false;
+
+        return Promise.all([waitPayments, waitStatus, waitReminds]);
     }
 
-    async getPrice() {
-        return PAYMENT_PRICE;
+    getTariffs() {
+        return [
+            { days: 30, price: 3500 },
+            { days: 90, price: 9500 },
+            { days: 180, price: 18000 },
+            { days: 365, price: 34000 },
+        ];
+    }
+    getTariff(days) {
+        return this.getTariffs().find(tariff => tariff.days === days) || false;
+    }
+    async getPrice(days) {
+        let tariff = this.getTariff(days);
+        return tariff
+            ? tariff.price
+            : FALLBACK_PAYMENT_PRICE;
     }
     getReturnUrl(ctx) {
         return `https://t.me/${ctx.me}`;
@@ -85,7 +105,7 @@ module.exports = class Payment {
                 return_url: returnUrl
             },
             description: ORDER_DESCRIPTION,
-            save_payment_method: true,
+            save_payment_method: USE_REPEATING_PAYMENTS,
             test: YOO_TEST
         });
     }
@@ -116,9 +136,9 @@ module.exports = class Payment {
             }
         });
     }
-    async addPaymentAndGetPaymentUrl(ctx, price = false) {
+    async addPaymentAndGetPaymentUrl(ctx, price = false, days = false) {
         if (!price) {
-            price = await this.getPrice();
+            price = await this.getPrice(days);
         }
 
         let profile = ctx.session.profile;
@@ -135,6 +155,8 @@ module.exports = class Payment {
                 created: moment().unix(),
                 status: yooPayment.status,
                 price,
+                days,
+                repeating: USE_REPEATING_PAYMENTS,
                 profile,
                 yooPayment,
                 paymentUrl
@@ -166,7 +188,7 @@ module.exports = class Payment {
             subscribed: true,
             blocked: {$in: [null, false]},
             subscribedTill: {$lt: now},
-            lastPayment: {$gt: 0},
+            autoSubscribe: true,
         }).toArray();
     }
     async getProcessingPayments() {
@@ -210,16 +232,22 @@ module.exports = class Payment {
     async finishPayment(payment) {
         let profile = payment.profile;
         let chatId = profile.chatId;
+        let days = payment.days;
 
         let db = await getDb();
         await db.collection('payments').updateOne({id: payment.id}, {$set: {finished: moment().unix()}});
 
         if (payment.status === 'succeeded') {
-            let nextMonth = moment().add(1, 'month').unix();
+            let now = moment().unix();
+            let nextPeriod = profile.subscribedTill > now
+                ? moment.unix(profile.subscribedTill).add(days, 'day').unix()
+                : moment().add(days, 'day').unix();
+
             await db.collection('profiles').updateOne({id: profile.id}, {$set: {
                 subscribed: true,
-                subscribedTill: nextMonth,
-                lastPayment: moment().unix()
+                subscribedTill: nextPeriod,
+                lastPayment: moment().unix(),
+                autoSubscribe: USE_REPEATING_PAYMENTS,
             }});
             await telegram.sendMessage(chatId, `Мы приняли ваш платеж, спасибо! Вы подписаны`);
         }
@@ -240,7 +268,17 @@ module.exports = class Payment {
             return false;
         }
 
-        let paymentMethodId = lastPayment.yooPayment.payment_method.id;
+        if (!lastPayment.repeating) {
+            return false;
+        }
+
+        let paymentMethodId = lastPayment.yooPayment.payment_method
+            ? lastPayment.yooPayment.payment_method.id || false
+            : false;
+        if (!paymentMethodId) {
+            return false;
+        }
+
         let yooPayment = await this.addAutoPayment(price, paymentMethodId);
 
         if (yooPayment) {
@@ -262,16 +300,44 @@ module.exports = class Payment {
         }
     }
 
+    async getPendingProfilesToRemind() {
+        let db = await getDb();
+        let now = moment().unix();
+        let inThreeDays = moment().add(3, 'day').unix();
+        let threeDays = 86400*3;
+        return db.collection('profiles').find({
+            subscribed: true,
+            blocked: {$in: [null, false]},
+            $and: [
+                { subscribedTill: {$lt: inThreeDays} },
+                { subscribedTill: {$gt: now} },
+            ],
+            $or: [
+                { lastRemind: {$lt: {$subtract: ["$subscribedTill", 86400*3]}} },
+                { lastRemind: {$exists: false} }
+            ],
+        }).toArray();
+    }
+    async remindAndSave(profile) {
+        let chatId = profile.chatId;
+        await telegram.sendMessage(
+            chatId,
+            `До окончания подписки осталось 3 дня`,
+            menu([{code: 'renew_subscription', text: 'Продлить подписку'}])
+        );
+
+        let db = await getDb();
+        return db.collection('profiles').updateOne({id: profile.id}, {$set: {lastRemind: moment().unix()}});
+    }
+
     async removeSubscribe(profile) {
         let db = await getDb();
         return db.collection('profiles').updateOne({id: profile.id}, {$set: {subscribed: false}});
     }
-
     async subscribeWithoutPayment(userId) {
         let db = await getDb();
         return db.collection('profiles').updateOne({userId}, {$set: {subscribed: true}});
     }
-
     async isSubscribed(userId) {
         let now = moment().unix();
         let db = await getDb();
@@ -281,17 +347,15 @@ module.exports = class Payment {
         let dateIsNotExpired = hasDateLimit && profile.subscribedTill >= now;
         return Boolean(profile && profile.subscribed && (hasNoDateLimit || dateIsNotExpired) );
     }
-
-    async needsPaymentToSubscribe(userId) {
-        let now = moment().unix();
+    async needsPaymentToSubscribe(userId, days) {
+        let subscribeTo = moment().add(days, 'day').unix();
         let db = await getDb();
         let profile = await db.collection('profiles').findOne({userId});
         let hasDateLimit = profile && profile.subscribedTill && profile.subscribedTill > 0;
         let isNewSubscriber = !hasDateLimit;
-        let dateIsExpired = hasDateLimit && profile.subscribedTill < now;
+        let dateIsExpired = hasDateLimit && profile.subscribedTill < subscribeTo;
         return isNewSubscriber || dateIsExpired;
     }
-
     async removeSubscribeByUserId(userId) {
         let db = await getDb();
         let profile = await db.collection('profiles').findOne({userId});
@@ -326,6 +390,33 @@ module.exports = class Payment {
 
             if (this.stopCallback) {
                 this.stopCallback();
+            }
+        }, 0);
+    }
+    launchPaymentReminder() {
+        return setTimeout(async () => {
+            this.runLoop = true;
+
+            while (this.runLoop) {
+                try {
+                    let profiles = await this.getPendingProfilesToRemind();
+
+                    if (profiles && profiles.length > 0) {
+                        for (const profile of profiles) {
+                            await this.remindAndSave(profile);
+                        }
+                    }
+                }
+                catch (e) {
+                    console.log(e);
+                }
+
+                await wait(PAYMENT_CHECK_INTERVAL_SEC * 1000);
+                await eventLoopQueue();
+            }
+
+            if (this.remindStopCallback) {
+                this.remindStopCallback();
             }
         }, 0);
     }

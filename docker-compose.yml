@@ -53,7 +53,8 @@ services:
       - YOO_SHOP_ID=${YOO_SHOP_ID}
       - YOO_SECRET_KEY=${YOO_SECRET_KEY}
       - YOO_TEST=${YOO_TEST}
-      - PAYMENT_PRICE=${PAYMENT_PRICE}
+      - FALLBACK_PAYMENT_PRICE=${FALLBACK_PAYMENT_PRICE}
+      - USE_REPEATING_PAYMENTS=${USE_REPEATING_PAYMENTS}
     command: npm run start
 
   mongo:

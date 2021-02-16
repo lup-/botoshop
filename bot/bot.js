@@ -33,6 +33,7 @@ let app = setupBot(BOT_TOKEN)
 
         next();
     })
+    .addRoute('action', 'renew_subscription', ctx => ctx.scene.enter('subscribe'))
     .addRoute('action', 'retry', ctx => ctx.scene.enter('subscribe'))
     .addDefaultRoute(ctx => ctx.scene.enter('intro'))
     .get();
@@ -44,6 +45,7 @@ mailer.setBlockedHandler(queueItem => {
 
 app.launch();
 mailer.launch();
+payment.launchPaymentReminder();
 payment.launchPeriodicPayments();
 payment.launchPaymentWatch();
 

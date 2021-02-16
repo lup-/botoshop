@@ -40,6 +40,10 @@
                                         @input="menuSmenuSubscribedTilltart = false"
                                 ></v-date-picker>
                             </v-menu>
+                            <v-switch v-model="subscriber.autoSubscribe" v-if="subscriber.subscribed && !noDateLimit"
+                                    label="Автопродление"
+                                    hint="Автоматическое списание платежа за следующий период. Для работы данная опция должна быть включена в боте и пользователь должен совершить один платеж"
+                            ></v-switch>
                         </v-form>
                     </v-card-text>
                     <v-card-actions>
