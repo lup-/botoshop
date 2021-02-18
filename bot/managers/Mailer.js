@@ -1,3 +1,8 @@
+const {Telegraf} = require('telegraf');
+const BOT_TOKEN = process.env.BOT_TOKEN;
+const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID;
+const tg = new Telegraf(BOT_TOKEN).telegram;
+
 const moment = require('moment');
 const shortid = require('shortid');
 const {getDb} = require('../lib/database');
@@ -135,7 +140,21 @@ module.exports = class Mailer {
             dateFinished: moment().unix(),
             status: MAILING_STATUS_FINISHED,
         }});
-        return this.clearSender(mailingId);
+
+        this.clearSender(mailingId);
+        let mailing = await db.collection('mailings').findOne({id: mailingId});
+        let message = `Рассылка закончена
+        
+Успешно: ${mailing.success || 0}
+Блокировок: ${mailing.blocks || 0}
+Ошибок: ${mailing.errors || 0}`;
+
+        try {
+            await tg.sendMessage(MANAGER_CHAT_ID, message);
+        }
+        catch (e) {}
+
+        return true;
     }
 
     async getPendingMailings() {
