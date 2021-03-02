@@ -1,7 +1,7 @@
 const shortid = require('shortid');
 const crypto = require('crypto');
 const moment = require('moment');
-const {getDb} = require('..//modules/Database');
+const {getDb} = require('../modules/Database');
 
 function md5(string) {
     return crypto.createHash('md5').update(string).digest("hex");

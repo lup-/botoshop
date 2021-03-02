@@ -15,6 +15,7 @@ module.exports = function () {
         let message = ctx.update.message;
         let {from, chat} = message;
         let id = from.id || chat.id || false;
+        let botId = ctx.botInfo.id;
 
         if (!id) {
             return next();
@@ -28,6 +29,7 @@ module.exports = function () {
             if (user) {
                 user.user = from;
                 user.chat = chat;
+                user.botId = botId;
                 user.updated = moment().unix();
                 if (user.blocked) {
                     user.blocked = false;
@@ -35,10 +37,10 @@ module.exports = function () {
                 }
 
             } else {
-                user = {id, user: from, chat, registered: moment().unix(), updated: moment().unix()};
+                user = {id, botId, user: from, chat, registered: moment().unix(), updated: moment().unix()};
             }
 
-            await users.findOneAndReplace({id}, user, {upsert: true, returnOriginal: false});
+            await users.findOneAndReplace({id, botId}, user, {upsert: true, returnOriginal: false});
         }
         finally {
         }

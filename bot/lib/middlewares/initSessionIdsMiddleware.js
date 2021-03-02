@@ -21,6 +21,8 @@ module.exports = function () {
             ctx.session.userId = ctx.from.id;
         }
 
+        ctx.session.botId = ctx.botInfo.id;
+
         return next();
     }
 }

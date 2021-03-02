@@ -1,0 +1,19 @@
+POST http://localhost:8196/api/user/login
+Content-Type: application/json
+
+{
+  "login": "admin",
+  "password": "admin"
+}
+
+###
+POST http://localhost:8196/api/user/add
+Content-Type: application/json
+
+{
+  "user": {
+    "login": "admin",
+    "password": "admin",
+    "isAdmin": true
+  }
+}

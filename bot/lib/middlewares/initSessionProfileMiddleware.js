@@ -39,14 +39,17 @@ module.exports = function () {
             : ctx.update.message.chat;
 
         const userId = fromInfo.id;
+        const botId = ctx.botInfo.id;
 
         ctx.session.userId = userId;
         ctx.session.chatId = chatInfo.id;
+        ctx.session.botId = botId;
 
         let defaultProfile = {
             id: userId,
             userId,
             chatId: chatInfo.id,
+            botId,
             firstName: fromInfo.first_name,
             lastName: fromInfo.last_name,
             userName: fromInfo.username,

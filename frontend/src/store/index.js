@@ -6,6 +6,9 @@ import stats from "./modules/stats";
 import user from "./modules/user";
 import payment from "./modules/payment";
 import subscriber from "./modules/subscriber";
+import funnel from "./modules/funnel";
+import stage from "./modules/stage";
+import bot from "./modules/bot";
 
 Vue.use(Vuex);
 
@@ -13,10 +16,12 @@ export default new Vuex.Store({
     state: {
         appError: false,
         appMessage: false,
+        loading: false,
         routes: [
             {code: 'statsDetails', title: 'Статистика', icon: 'mdi-database'},
-            {code: 'mailingList', title: 'Рассылка сигналов', icon: 'mdi-email'},
-            {code: 'subscribersList', title: 'Подписчики', icon: 'mdi-account-cash'},
+            {code: 'mailingList', title: 'Рассылки', icon: 'mdi-email'},
+            {code: 'botsList', title: 'Боты', icon: 'mdi-robot'},
+            {code: 'funnelsList', title: 'Воронки', icon: 'mdi-filter-variant'},
             {code: 'paymentsList', title: 'Платежи', icon: 'mdi-cash'},
             {code: 'usersList', title: 'Пользователи админки', icon: 'mdi-account'},
         ]
@@ -27,6 +32,9 @@ export default new Vuex.Store({
         }
     },
     mutations: {
+        setLoading(state, newLoadingState) {
+            state.loading = newLoadingState;
+        },
         setAppError(state, error) {
             state.appError = error;
         },
@@ -46,6 +54,9 @@ export default new Vuex.Store({
         stats,
         user,
         payment,
-        subscriber
+        subscriber,
+        funnel,
+        stage,
+        bot
     }
 })

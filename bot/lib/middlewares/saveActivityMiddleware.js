@@ -11,10 +11,11 @@ module.exports = async (ctx, next) => {
     let activities = db.collection('activity');
 
     let userId = ctx.from ? ctx.from.id : false;
+    let botId = ctx.botInfo.id;
     let type = ctx.updateType;
     let subTypes = ctx.updateSubTypes;
     let date = moment().unix();
     let data = ctx.update[type].data || false;
-    await activities.insertOne({userId, date, type, subTypes, data});
+    await activities.insertOne({userId, botId, date, type, subTypes, data});
     return next();
 }

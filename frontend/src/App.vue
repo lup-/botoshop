@@ -28,7 +28,13 @@
 
         <v-app-bar app clipped-left>
             <v-app-bar-nav-icon @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
-            <v-toolbar-title>Бот сигналов</v-toolbar-title>
+            <v-toolbar-title>Воронки</v-toolbar-title>
+            <v-progress-linear
+                    :active="isLoading"
+                    :indeterminate="isLoading"
+                    absolute
+                    bottom
+            ></v-progress-linear>
         </v-app-bar>
 
         <v-main>
@@ -78,6 +84,9 @@
             },
             isLoggedIn() {
                 return this.$store.getters.isLoggedIn;
+            },
+            isLoading() {
+                return this.$store.state.loading;
             }
         }
     }

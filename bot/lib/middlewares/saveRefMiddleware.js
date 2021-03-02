@@ -16,6 +16,7 @@ module.exports = function () {
             ? ctx.update.message.text.replace('/start ', '')
             : false;
         let message = ctx.update.message;
+        let botId = ctx.botInfo.id;
         let userId = message && message.from
             ? message.from.id
             : false;
@@ -37,17 +38,22 @@ module.exports = function () {
         const db = await getDb();
         const refs = db.collection('refs');
 
-        let refId = `${userId}:${ref}`;
+        let refId = `${botId}:${userId}:${ref}`;
 
         let refFields = {
             refId,
             userId,
+            botId,
             ref,
             date: moment().unix(),
         }
 
         if (subref) {
             refFields.subref = subref;
+        }
+
+        if (!ctx.session.ref) {
+            ctx.session.ref = refFields;
         }
 
         try {

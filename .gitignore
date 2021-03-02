@@ -158,3 +158,4 @@ dot.env
 
 # Custom
 /etc/database/*
+/uploads/*

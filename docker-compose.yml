@@ -7,6 +7,7 @@ services:
       - ${HTTP_PORT}:80
     volumes:
       - ./frontend/dist:/var/www/public
+      - ./uploads:/var/www/downloads
       - ./etc/nginx/site.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - backend
@@ -18,12 +19,15 @@ services:
     depends_on:
       - mongo
     volumes:
-      - ./backend:/var/www
-    working_dir: /var/www
+      - ./backend:/var/www/backend
+      - ./uploads:/var/www/uploads
+    working_dir: /var/www/backend
     environment:
       - NODE_ENV=development
       - MONGO_HOST=mongo
-      - MONGO_DB=signals_bot
+      - MONGO_DB=funnel_bot
+      - BASE_DOWNLOAD_URL=http://localhost:8196/download/
+      - UPLOAD_DIR=/var/www/uploads
     command: npm run start
 
   bot:
@@ -38,23 +42,15 @@ services:
     environment:
       - NODE_ENV=development
       - MONGO_HOST=mongo
-      - MONGO_DB=signals_bot
-      - BOT_TOKEN=${BOT_TOKEN}
+      - MONGO_DB=funnel_bot
       - MAILINGS_CHECK_INTERVAL_SEC=${MAILINGS_CHECK_INTERVAL_SEC}
       - PAYMENT_CHECK_INTERVAL_SEC=${PAYMENT_CHECK_INTERVAL_SEC}
       - PAYMENT_STATUS_CHECK_INTERVAL_SEC=${PAYMENT_STATUS_CHECK_INTERVAL_SEC}
       - TEST_USER_ID=${TEST_USER_ID}
       - TEST_CHAT_ID=${TEST_CHAT_ID}
-      - MANAGER_CHAT_ID=${MANAGER_CHAT_ID}
       - TEST_QUEUE_SIZE=${TEST_QUEUE_SIZE}
       - START_DELAY_SECONDS=${START_DELAY_SECONDS}
       - TGAPI_ROOT=${TGAPI_ROOT}
-      - SOURCE_CHANNEL_ID=${SOURCE_CHANNEL_ID}
-      - YOO_SHOP_ID=${YOO_SHOP_ID}
-      - YOO_SECRET_KEY=${YOO_SECRET_KEY}
-      - YOO_TEST=${YOO_TEST}
-      - FALLBACK_PAYMENT_PRICE=${FALLBACK_PAYMENT_PRICE}
-      - USE_REPEATING_PAYMENTS=${USE_REPEATING_PAYMENTS}
     command: npm run start
 
   mongo:

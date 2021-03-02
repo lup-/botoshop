@@ -10,6 +10,13 @@ import SubscriberEdit from "../components/Subscribers/Edit";
 import Login from '../components/Users/Login';
 import UsersEdit from '../components/Users/Edit';
 import UsersList from '../components/Users/List';
+import BotsEdit from '../components/Bots/Edit';
+import BotsList from '../components/Bots/List';
+import FunnelsEdit from '../components/Funnels/Edit';
+import FunnelsList from '../components/Funnels/List';
+import StagesEdit from '../components/Stages/Edit';
+import StagesList from '../components/Stages/List';
+
 import store from "../store";
 
 Vue.use(VueRouter);
@@ -25,6 +32,15 @@ const routes = [
     { name: 'usersList', path: '/users/', component: UsersList, meta: {requiresAuth: true, group: 'usersList'} },
     { name: 'userNew', path: '/users/new', component: UsersEdit, meta: {requiresAuth: true, group: 'usersList'} },
     { name: 'userEdit', path: '/users/:id', component: UsersEdit, meta: {requiresAuth: true, group: 'usersList'} },
+    { name: 'botsList', path: '/bots/', component: BotsList, meta: {requiresAuth: true, group: 'botsList'} },
+    { name: 'botNew', path: '/bots/new', component: BotsEdit, meta: {requiresAuth: true, group: 'botsList'} },
+    { name: 'botEdit', path: '/bots/:id', component: BotsEdit, meta: {requiresAuth: true, group: 'botsList'} },
+    { name: 'funnelsList', path: '/funnels/', component: FunnelsList, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'funnelNew', path: '/funnels/new', component: FunnelsEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'funnelEdit', path: '/funnels/:id', component: FunnelsEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'stagesList', path: '/funnels/:funnelId/stages/', component: StagesList, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'stageNew', path: '/funnels/:funnelId/stages/new', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'stageEdit', path: '/funnels/:funnelId/stages/:id', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
 ]
 
 const router = new VueRouter({

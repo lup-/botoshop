@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
+    "he": "^1.2.0",
     "moment": "^2.29.1",
     "mongodb": "^3.6.4",
     "shortid": "^2.2.16",

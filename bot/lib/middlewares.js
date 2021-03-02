@@ -7,6 +7,7 @@ const checkSubscriptionMiddleware = require('./middlewares/checkSubscriptionMidd
 const safeReplyMiddleware = require('./middlewares/safeReplyMiddleware');
 const blockNonPrivate = require('./middlewares/blockNonPrivate');
 const catchErrors = require('./middlewares/catchErrors');
+const initFunnel = require('./middlewares/initFunnel');
 
 module.exports = {
     initSessionIdsMiddleware,
@@ -17,5 +18,6 @@ module.exports = {
     checkSubscriptionMiddleware,
     safeReplyMiddleware,
     blockNonPrivate,
-    catchErrors
+    catchErrors,
+    initFunnel
 }

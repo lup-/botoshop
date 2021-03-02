@@ -12,7 +12,8 @@ const {
     checkSubscriptionMiddleware,
     safeReplyMiddleware,
     catchErrors,
-    blockNonPrivate
+    blockNonPrivate,
+    initFunnel
 } = require('./middlewares');
 
 const store = new Map();
@@ -108,6 +109,11 @@ class Injector {
 
     blockNonPrivate() {
         this.app.use(blockNonPrivate);
+        return this;
+    }
+
+    addFunnels(bot, botManager) {
+        this.app.use(initFunnel(bot, botManager));
         return this;
     }
 
