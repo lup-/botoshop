@@ -2,28 +2,32 @@ const {Telegraf} = require('telegraf');
 
 const {wait} = require('../lib/helpers');
 const {getDb} = require('../lib/database');
+const {sendMessage} = require('../lib/message');
 
 const STATUS_NEW = 'new';
 const STATUS_BLOCKED = 'blocked';
 const STATUS_FAILED = 'failed';
 const STATUS_FINISHED = 'sent';
 
-const BOT_TOKEN = process.env.BOT_TOKEN;
 const API_ROOT = process.env.TGAPI_ROOT || 'https://api.telegram.org'
 
 module.exports = class Sender {
     constructor(mailingId = false) {
         this.id = mailingId;
+        this.mailing = false;
+        this.bot = false;
         this.chunkSize = 5;
     }
 
-    async init(mailing = false, blockedHandler = false) {
+    async init(mailing = false, bot = false, blockedHandler = false) {
         if (mailing) {
             this.mailing = mailing;
         }
         else {
             await this.loadMailing();
         }
+
+        this.bot = bot;
 
         if (blockedHandler) {
             this.blockedHandler = blockedHandler;
@@ -32,7 +36,8 @@ module.exports = class Sender {
         return this;
     }
 
-    getTelegram(token) {
+    getTelegram() {
+        let token = this.bot.token;
         return new Telegraf(token, {telegram: {apiRoot: API_ROOT}}).telegram;
     }
 
@@ -46,11 +51,11 @@ module.exports = class Sender {
             chunkSize = this.chunkSize;
         }
         let db = await getDb();
-        let chats = await db.collection('mailingQueue').find({
+        return db.collection('mailingQueue').find({
             mailing: this.id,
+            bot: this.bot.id,
             status: STATUS_NEW,
         }).limit(chunkSize).toArray();
-        return chats;
     }
 
     getMessage() {
@@ -71,7 +76,7 @@ module.exports = class Sender {
         let db = await getDb();
         await db.collection('mailingQueue').updateOne({_id: chat._id}, {$set: {status: STATUS_BLOCKED}});
         if (this.blockedHandler) {
-            await this.blockedHandler(chat);
+            await this.blockedHandler(chat, this.bot);
         }
         return this.updateCounters('blocks');
     }
@@ -86,13 +91,14 @@ module.exports = class Sender {
         return this.updateCounters('errors');
     }
 
-    async setChatFinished(chat, messageId) {
+    async setChatFinished(chat, messages) {
         if (!chat._id) {
             return false;
         }
 
+        let messageIds = messages.map(message => message.message_id);
         let db = await getDb();
-        await db.collection('mailingQueue').updateOne({_id: chat._id}, {$set: {status: STATUS_FINISHED, messageId}});
+        await db.collection('mailingQueue').updateOne({_id: chat._id}, {$set: {status: STATUS_FINISHED, messageIds}});
         return this.updateCounters('success');
     }
 
@@ -104,25 +110,19 @@ module.exports = class Sender {
         return mailingDb.collection('mailings').updateOne({id: this.id}, {$inc: query});
     }
 
-    async sendCopyMessage(chatId, telegram) {
-        let message = this.getMessage();
-        let fromChatId = message.chat.id;
-        return telegram.copyMessage(chatId, fromChatId, message.message_id);
-    }
-
     async sendMailingToChat(chat) {
         let response = false;
 
-        let telegram = this.getTelegram(BOT_TOKEN);
+        let telegram = this.getTelegram();
 
         try {
-            response = await this.sendCopyMessage(chat.chatId, telegram);
+            response = await sendMessage(telegram, chat.chatId, this.getMessage());
             if (this.id) {
                 if (!response) {
                     await this.setChatFailed(chat, false);
                 }
                 else {
-                    await this.setChatFinished(chat, response.message_id);
+                    await this.setChatFinished(chat, response);
                 }
             }
         }

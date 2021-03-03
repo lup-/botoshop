@@ -32,10 +32,8 @@ module.exports = function () {
                 user.botId = botId;
                 user.updated = moment().unix();
                 if (user.blocked) {
-                    user.blocked = false;
-                    user.lastBlockCheck = moment().unix();
+                    user.blocked = null;
                 }
-
             } else {
                 user = {id, botId, user: from, chat, registered: moment().unix(), updated: moment().unix()};
             }

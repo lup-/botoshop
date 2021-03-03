@@ -25,7 +25,10 @@ router
     .post('/api/stats/details', stats.details.bind(stats));
 
 router
-    .post('/api/mailing/list', mailings.list.bind(mailings));
+    .post('/api/mailing/list', mailings.list.bind(mailings))
+    .post('/api/mailing/add', mailings.add.bind(mailings))
+    .post('/api/mailing/update', mailings.update.bind(mailings))
+    .post('/api/mailing/delete', mailings.delete.bind(mailings));
 
 router
     .post('/api/payment/list', payments.list.bind(payments));

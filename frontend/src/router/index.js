@@ -4,6 +4,7 @@ import VueRouter from 'vue-router';
 import Home from "../components/Home";
 import Details from "../components/Stats/Details";
 import MailingsList from "../components/Mailings/List";
+import MailingEdit from "../components/Mailings/Edit";
 import PaymentsList from "../components/Payments/List";
 import SubscribersList from "../components/Subscribers/List";
 import SubscriberEdit from "../components/Subscribers/Edit";
@@ -25,7 +26,9 @@ const routes = [
     { name: 'home', path: '/', component: Home, meta: {requiresAuth: true, group: 'home'} },
     { name: 'login', path: '/login', component: Login },
     { name: 'statsDetails', path: '/stats/', component: Details, meta: {requiresAuth: true, group: 'statsDetails'} },
-    { name: 'mailingList', path: '/mailings/', component: MailingsList, meta: {requiresAuth: true, group: 'mailingList'} },
+    { name: 'mailingsList', path: '/mailings/', component: MailingsList, meta: {requiresAuth: true, group: 'mailingsList'} },
+    { name: 'mailingNew', path: '/mailings/new', component: MailingEdit, meta: {requiresAuth: true, group: 'mailingsList'} },
+    { name: 'mailingEdit', path: '/mailings/:id', component: MailingEdit, meta: {requiresAuth: true, group: 'mailingsList'} },
     { name: 'subscribersList', path: '/subscribers/', component: SubscribersList, meta: {requiresAuth: true, group: 'subscribersList'} },
     { name: 'subscriberEdit', path: '/subscribers/:id', component: SubscriberEdit, meta: {requiresAuth: true, group: 'subscribersList'} },
     { name: 'paymentsList', path: '/payments/', component: PaymentsList, meta: {requiresAuth: true, group: 'paymentsList'} },

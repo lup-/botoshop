@@ -6,6 +6,7 @@ const bots = new Bots();
 
 (async () => {
     await bots.launchBots();
+    mailer.setBlockedHandler(mailer.blockUser);
     mailer.launch();
 
     process.on('SIGTERM', async () => {

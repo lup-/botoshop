@@ -41,6 +41,7 @@ module.exports = {
             id: shortid.generate(),
             created: moment().unix(),
             updated: moment().unix(),
+            status: 'new',
         });
 
         let result = await db.collection(COLLECTION_NAME).insertOne(itemData);
@@ -63,6 +64,10 @@ module.exports = {
 
         if (itemData._id) {
             delete itemData._id;
+        }
+
+        if (!itemData.status) {
+            itemData.status = 'new';
         }
 
         await db.collection(COLLECTION_NAME).findOneAndReplace({id}, itemData);

@@ -19,7 +19,7 @@
                         locale="ru"
                 >
                     <template v-slot:item.funnels="{ item }">
-                        <v-chip v-for="funnel in fullFunnels(item.funnels)" :key="funnel.name" class="mr-2 mb-2" x-small>
+                        <v-chip v-for="funnel in fullFunnels(item.funnels)" :key="funnel.id" class="mr-2 mb-2" x-small>
                             {{funnel.title}}
                         </v-chip>
                     </template>

@@ -1,6 +1,5 @@
 const {getDb} = require('../lib/database');
 const setupBot = require('../lib/setup');
-const {Telegraf} = require('telegraf');
 
 const COLLECTION_NAME = 'bots';
 

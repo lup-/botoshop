@@ -1,23 +1,19 @@
-import axios from "axios";
+import Crud from "./baseCrud";
 
-export default {
-    state: {
-        list: [],
-        currentFilter: false,
-    },
-    actions: {
-        async loadMailings({commit}, filter = {}) {
-            let response = await axios.post(`/api/mailing/list`, {filter});
-            await commit('setFilter', filter);
-            return commit('setMailings', response.data.mailings);
-        },
-    },
-    mutations: {
-        setMailings(state, mailings) {
-            state.list = mailings;
-        },
-        setFilter(state, filter) {
-            state.currentFilter = filter;
-        }
-    }
-}
+const API_LIST_URL = `/api/mailing/list`;
+const API_ADD_URL = `/api/mailing/add`;
+const API_UPDATE_URL = `/api/mailing/update`;
+const API_DELETE_URL = `/api/mailing/delete`;
+
+const NAME_ITEMS = 'mailings';
+const NAME_ITEM = 'mailing';
+
+export default new Crud({
+    API_LIST_URL,
+    API_ADD_URL,
+    API_UPDATE_URL,
+    API_DELETE_URL,
+
+    NAME_ITEMS,
+    NAME_ITEM
+});
