@@ -16,9 +16,17 @@ export default {
     namespaced: true,
     state: {
         list: [],
+        lastSavedItem: false,
         edit: false,
         funnelId: false,
         currentFilter: false,
+    },
+    getters: {
+        byId(state) {
+            return itemId => {
+                return state.list.find(item => item.id === itemId);
+            }
+        }
     },
     actions: {
         async loadItems({commit}, {funnelId, filter}) {
@@ -31,16 +39,27 @@ export default {
         async setEditItem({commit, state}, itemId) {
             let item = state.list.find(item => item.id === itemId);
             if (item) {
-                commit('setEditItem', item);
+                return commit('setEditItem', item);
             }
         },
-        async newItem({dispatch, state}, {item, funnelId}) {
+        async newItem({dispatch, commit, state}, {item, funnelId}) {
             let query = {};
             query[NAME_ITEM] = item;
 
             let result = await axios.post(getFinalUrl(API_ADD_URL, funnelId), query);
-            dispatch('setEditItem', result.data[NAME_ITEM]);
+            await commit('setLastSavedItem', result.data[NAME_ITEM]);
+            await dispatch('setEditItem', result.data[NAME_ITEM]);
             return dispatch('loadItems', {funnelId, filter: state.currentFilter});
+        },
+        async saveItemQuiet(_, {item, funnelId}) {
+            try {
+                let query = {};
+                query[NAME_ITEM] = item;
+                await axios.post(getFinalUrl(API_UPDATE_URL, funnelId), query);
+            }
+            catch (e) {
+                //no-op
+            }
         },
         async saveItem({dispatch, commit, state}, {item, funnelId}) {
             try {
@@ -50,17 +69,35 @@ export default {
                 let response = await axios.post(getFinalUrl(API_UPDATE_URL, funnelId), query);
                 let isSuccess = response && response.data && response.data[NAME_ITEM] && response.data[NAME_ITEM].id;
                 if (isSuccess) {
-                    commit('setSuccessMessage', 'Данные сохранены!');
+                    await commit('setLastSavedItem', response.data[NAME_ITEM]);
+                    await commit('setSuccessMessage', 'Данные сохранены!', { root: true });
                 }
                 else {
-                    commit('setErrorMessage', 'Ошибка сохранения данных!');
+                    await commit('setErrorMessage', 'Ошибка сохранения данных!', { root: true });
                 }
             }
             catch (e) {
-                commit('setErrorMessage', 'Ошибка сохранения данных!')
+                await commit('setErrorMessage', 'Ошибка сохранения данных!', { root: true })
             }
 
             return dispatch('loadItems', {funnelId, filter: state.currentFilter});
+        },
+        async saveXYPosition({dispatch, commit, state, getters}, {stageId, x, y}) {
+            let stage = getters.byId(stageId);
+            if (stage) {
+                stage.graph = {x, y}
+                await dispatch('saveItemQuiet', {item: stage, funnelId: state.funnelId});
+                commit('updateItem', stage);
+            }
+        },
+        async saveLinkXYPosition({dispatch, commit, state, getters}, {stageId, linkIndex, x, y}) {
+            let stage = getters.byId(stageId);
+            let stageHasLinkAtIndex = stage && stage.buttons && stage.buttons[linkIndex].type === 'link';
+            if (stageHasLinkAtIndex) {
+                stage.buttons[linkIndex].graph = {x, y}
+                await dispatch('saveItemQuiet', {item: stage, funnelId: state.funnelId});
+                commit('updateItem', stage);
+            }
         },
         async deleteItem({dispatch, state}, {item, funnelId}) {
             let query = {};
@@ -74,6 +111,12 @@ export default {
         setItems(state, items) {
             state.list = items;
         },
+        updateItem(state, newItem) {
+            let index = state.list.findIndex(item => item.id === newItem.id);
+            if (index !== -1) {
+                state.list[index] = newItem;
+            }
+        },
         setFilter(state, filter) {
             state.currentFilter = filter;
         },
@@ -82,6 +125,9 @@ export default {
         },
         setFunnelId(state, funnelId) {
             state.funnelId = funnelId;
+        },
+        setLastSavedItem(state, lastSavedItem) {
+            state.lastSavedItem = lastSavedItem;
         }
     }
 }

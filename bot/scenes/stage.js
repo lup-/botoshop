@@ -1,13 +1,15 @@
 const { Scenes } = require('telegraf');
 const { BaseScene } = Scenes;
-const { sendMessage } = require('../lib/message');
+const { sendStageMessage } = require('../lib/message');
 
 async function replyWithSceneMessage(ctx, stage) {
     await ctx.funnel.logStage(stage, ctx);
 
     let chatId = ctx.chat.id;
+    let botId = ctx.botInfo.id;
     let telegram = ctx.telegram;
-    return sendMessage(telegram, chatId, stage);
+
+    return sendStageMessage(telegram, chatId, stage, botId);
 }
 
 module.exports = function () {
@@ -25,7 +27,8 @@ module.exports = function () {
     });
 
     scene.start(ctx => {
-        return ctx.scene.leave();
+        ctx.scene.state.stage = ctx.funnel.getStartingStage();
+        return ctx.scene.reenter();
     });
 
     scene.on('text', async ctx => {
@@ -44,8 +47,12 @@ module.exports = function () {
         return ctx.scene.reenter();
     });
 
-    scene.action(/goto_(.*)/, async ctx => {
-        let nextStageId = ctx.match[1];
+    scene.action(/goto\/(.*?)\/(.*)/, async ctx => {
+        let buttonId = ctx.match[1];
+        let nextStageId = ctx.match[2];
+
+        await ctx.funnel.logButton(buttonId, ctx, ctx.funnel.getId());
+
         let nextStage = ctx.funnel.getStageById(nextStageId);
         if (nextStage) {
             ctx.scene.state.stage = nextStage;

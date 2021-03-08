@@ -14,6 +14,7 @@ import UsersList from '../components/Users/List';
 import BotsEdit from '../components/Bots/Edit';
 import BotsList from '../components/Bots/List';
 import FunnelsEdit from '../components/Funnels/Edit';
+import FunnelBuilder from '../components/Funnels/Builder';
 import FunnelsList from '../components/Funnels/List';
 import StagesEdit from '../components/Stages/Edit';
 import StagesList from '../components/Stages/List';
@@ -41,6 +42,8 @@ const routes = [
     { name: 'funnelsList', path: '/funnels/', component: FunnelsList, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'funnelNew', path: '/funnels/new', component: FunnelsEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'funnelEdit', path: '/funnels/:id', component: FunnelsEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'funnelBuilderNew', path: '/funnels/builder/new', component: FunnelBuilder, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'funnelBuilderEdit', path: '/funnels/builder/:id', component: FunnelBuilder, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stagesList', path: '/funnels/:funnelId/stages/', component: StagesList, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stageNew', path: '/funnels/:funnelId/stages/new', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stageEdit', path: '/funnels/:funnelId/stages/:id', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },

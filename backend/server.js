@@ -12,6 +12,7 @@ const funnels = require('./routes/funnels');
 const stages = require('./routes/stages');
 const files = require('./routes/files');
 const bots = require('./routes/bots');
+const go = require('./routes/go');
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -64,8 +65,11 @@ router
     .post('/api/user/login', users.login.bind(users));
 
 router
-    .post('/api/file/link', upload.single('file'), files.getLink)
-    .post('/api/file/delete', files.deleteFile);
+    .post('/api/file/link', upload.single('file'), files.getLink.bind(files))
+    .post('/api/file/delete', files.deleteFile.bind(files));
+
+router
+    .get('/go/:linkId/:stageId/:chatId/:botId', go.go);
 
 app
     .use(bodyParser({

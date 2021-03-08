@@ -26,8 +26,9 @@ services:
       - NODE_ENV=development
       - MONGO_HOST=mongo
       - MONGO_DB=funnel_bot
-      - BASE_DOWNLOAD_URL=http://localhost:8196/download/
+      - BASE_DOWNLOAD_URL=${BASE_DOWNLOAD_URL}
       - UPLOAD_DIR=/var/www/uploads
+      - BOT_HTTP_INTERFACE_URL=${BOT_HTTP_INTERFACE_URL}
     command: npm run start
 
   bot:
@@ -38,6 +39,7 @@ services:
       - mongo
     volumes:
       - ./bot:/var/bot
+      - ./uploads:/var/www/uploads
     working_dir: /var/bot
     environment:
       - NODE_ENV=development
@@ -52,6 +54,8 @@ services:
       - TEST_QUEUE_SIZE=${TEST_QUEUE_SIZE}
       - START_DELAY_SECONDS=${START_DELAY_SECONDS}
       - TGAPI_ROOT=${TGAPI_ROOT}
+      - SHORT_LINK_BASE=${SHORT_LINK_BASE}
+      - UPLOAD_DIR=/var/www/uploads
     command: npm run start
 
   mongo:

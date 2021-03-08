@@ -126,6 +126,7 @@
                     </v-card-text>
                     <v-card-actions>
                         <v-btn @click="gotoList">К списку</v-btn>
+                        <v-btn @click="gotoBuilder">К конструктору</v-btn>
                         <v-btn large color="primary" @click="save">Сохранить</v-btn>
                     </v-card-actions>
                 </v-card>
@@ -209,10 +210,13 @@
                     await this.$store.dispatch(this.ACTION_SAVE, {item: saveItem, funnelId: this.funnelId});
                 }
 
-                return this.gotoList();
+                return this.gotoBuilder();
             },
             gotoList() {
                 return this.$router.push({name: this.ROUTE_LIST, params: {funnelId: this.funnelId}});
+            },
+            gotoBuilder() {
+                return this.$router.push({name: 'funnelBuilderEdit', params: {id: this.funnelId}});
             },
             addButton() {
                 this.buttons.push({text: '', type: 'stage', target: ''});

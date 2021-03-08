@@ -1,16 +1,37 @@
+const path = require('path');
+const fs = require('fs');
 const {menu, escapeHTML} = require('./helpers');
+const SHORT_LINK_BASE=process.env.SHORT_LINK_BASE;
+const UPLOAD_DIR=process.env.UPLOAD_DIR;
+
+function makeButtonUrl(button, stageId, chatId, botId) {
+    return `${SHORT_LINK_BASE}/go/${button.linkId}/${stageId}/${chatId}/${botId}`;
+}
 
 function dataUriToBuffer(uri) {
     let data = uri.split(',')[1];
     return Buffer.from(data,'base64');
 }
-function getButtons(message, extra = {}) {
-    let buttons = message.buttons.map(button => {
+function getButtons(message, extra = {}, stageId = null, mailingId = null, chatId = null, botId = null) {
+    let hasButtons = message.buttons && message.buttons.length > 0;
+    if (!hasButtons) {
+        return extra;
+    }
+
+    let buttons = message.buttons.map((button, index) => {
         let hasNoType = !Boolean(button.type);
         let isLink = hasNoType || button.type === 'link';
-        return isLink
-            ? {text: button.text, url: button.target}
-            : {text: button.text, code: `goto_${button.target}`}
+        let buttonId = stageId !== null
+            ? `stage:${stageId}:${button.target}:${index}`
+            : `mailing:${mailingId}:${index}`;
+
+        if (isLink) {
+            let url = makeButtonUrl(button, stageId, chatId, botId);
+            return {text: button.text, url};
+        }
+        else {
+            return {text: button.text, code: `goto/${buttonId}/${button.target}`};
+        }
     });
 
     return Object.assign(extra, menu(buttons, 1));
@@ -28,12 +49,19 @@ function getExtra(message) {
     return extra;
 }
 
-async function sendMessage(telegram, chatId, message) {
+function sendMailingMessage(telegram, chatId, message, mailing = null, botId) {
+    return sendMessage(telegram, chatId, message, null, mailing, botId);
+}
+function sendStageMessage(telegram, chatId, stage, botId) {
+    let message = stage;
+    return sendMessage(telegram, chatId, message, stage, null, botId);
+}
+async function sendMessage(telegram, chatId, message, stage = null, mailing = null, botId = null) {
     let caption = escapeHTML(message.text);
     let hasVideo = message.videos && message.videos.length > 0;
     let hasPhoto = message.photos && message.photos.length > 0;
     let hasCaption = caption.length > 0;
-    let hasButtons = message.buttons.length > 0;
+    let hasButtons = message.buttons && message.buttons.length > 0;
 
     let sentMessages = [];
 
@@ -43,9 +71,11 @@ async function sendMessage(telegram, chatId, message) {
         })
         : [];
 
+    let stageId = stage ? stage.id : null;
+    let mailingId = mailing ? mailing.id : null;
     let extra = getExtra(message);
-    let buttons = message.needsAnswer ? [] : getButtons(message, extra);
-    let mediaExtra = message.needsAnswer ? [] : getButtons(message, extra);
+    let buttons = message.needsAnswer ? [] : getButtons(message, extra, stageId, mailingId, chatId, botId);
+    let mediaExtra = message.needsAnswer ? [] : getButtons(message, extra, stageId, mailingId, chatId, botId);
     if (hasCaption) {
         mediaExtra.caption = caption;
         mediaExtra.parse_mode = 'html';
@@ -58,15 +88,18 @@ async function sendMessage(telegram, chatId, message) {
             for (const index in message.videos) {
                 let video = message.videos[index];
                 let isLastVideo = parseInt(index) === message.videos.length-1;
-                let url = encodeURI(video.src);
+
+                let uploadPath = path.join(UPLOAD_DIR, video.serverFile.filename);
+                let videoStream = fs.createReadStream(uploadPath);
+                let videoNote = {source: videoStream};
 
                 if (isLastVideo && hasNoPhoto) {
-                    let lastMessage = await telegram.sendVideoNote(chatId, {url}, mediaExtra);
+                    let lastMessage = await telegram.sendVideoNote(chatId, videoNote, mediaExtra);
                     sentMessages.push(lastMessage);
                     return sentMessages;
                 }
                 else {
-                    let message = await telegram.sendVideoNote({url}, extra);
+                    let message = await telegram.sendVideoNote(videoNote, extra);
                     sentMessages.push(message);
                 }
             }
@@ -126,4 +159,4 @@ async function sendMessage(telegram, chatId, message) {
     return sentMessages;
 }
 
-module.exports = {sendMessage};
+module.exports = {sendMessage, sendMailingMessage, sendStageMessage};

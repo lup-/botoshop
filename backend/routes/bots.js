@@ -2,11 +2,13 @@ const {getDb} = require('../modules/Database');
 const {Telegraf} = require('telegraf');
 const shortid = require('shortid');
 const moment = require('moment');
+const axios = require("axios");
 
 const DB_NAME = 'funnel_bot';
 const COLLECTION_NAME = 'bots';
 const ITEMS_NAME = 'bots';
 const ITEM_NAME = 'bot';
+const BOT_HTTP_INTERFACE_URL = process.env.BOT_HTTP_INTERFACE_URL || 'http://bot:3000';
 
 module.exports = {
     async getBotInfo(token) {
@@ -58,8 +60,18 @@ module.exports = {
 
         let result = await db.collection(COLLECTION_NAME).insertOne(itemData);
         let item = result.ops[0];
+
         let response = {};
         response[ITEM_NAME] = item;
+
+        try {
+            let {data} = await axios.get(BOT_HTTP_INTERFACE_URL + '/sync');
+            response.reload = data;
+        }
+        catch (e) {
+            response.reload = {error: e};
+        }
+
         ctx.body = response;
     },
     async update(ctx) {

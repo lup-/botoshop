@@ -25,7 +25,7 @@ module.exports = function () {
         const users = db.collection('users');
 
         try {
-            let user = await users.findOne({id});
+            let user = await users.findOne({id, botId});
             if (user) {
                 user.user = from;
                 user.chat = chat;

@@ -20,6 +20,7 @@
                 >
                     <template v-slot:item.actions="{ item }">
                         <v-btn icon small @click="gotoStages(item.id)"><v-icon>mdi-format-list-numbered</v-icon></v-btn>
+                        <v-btn icon small @click="gotoBuilder(item.id)"><v-icon>mdi-hammer-wrench</v-icon></v-btn>
                         <v-btn icon small @click="gotoEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
                         <v-btn icon small @click="deleteItem(item)"><v-icon>mdi-delete</v-icon></v-btn>
                     </template>
@@ -52,6 +53,9 @@
         methods: {
             gotoStages(funnelId) {
                 this.$router.push({name: 'stagesList', params: {funnelId}});
+            },
+            gotoBuilder(funnelId) {
+                this.$router.push({name: 'funnelBuilderEdit', params: {id: funnelId}});
             },
         }
     }

@@ -2,7 +2,7 @@ const {Telegraf} = require('telegraf');
 
 const {wait} = require('../lib/helpers');
 const {getDb} = require('../lib/database');
-const {sendMessage} = require('../lib/message');
+const {sendMailingMessage} = require('../lib/message');
 
 const STATUS_NEW = 'new';
 const STATUS_BLOCKED = 'blocked';
@@ -116,7 +116,7 @@ module.exports = class Sender {
         let telegram = this.getTelegram();
 
         try {
-            response = await sendMessage(telegram, chat.chatId, this.getMessage());
+            response = await sendMailingMessage(telegram, chat.chatId, this.getMessage(), this.mailing, this.bot.botId);
             if (this.id) {
                 if (!response) {
                     await this.setChatFailed(chat, false);

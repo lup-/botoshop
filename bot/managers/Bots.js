@@ -24,6 +24,7 @@ module.exports = class BotManager {
             .addDefaultRoute(ctx => ctx.scene.enter('stage'))
             .get();
 
+        app.botDbId = bot.id;
         app.launch();
 
         return app;
@@ -62,5 +63,48 @@ module.exports = class BotManager {
     async launchBots() {
         await this.loadBots();
         this.runningBots = this.allBots.map(this.createBot.bind(this));
+    }
+
+    async launchNewBots() {
+        await this.loadBots();
+        let runningBotUsernames = this.runningBots.map(telegraf => telegraf.botInfo.username);
+        let allUsernames = this.allBots.map(bot => bot.username);
+        let newBotNames = allUsernames.filter(name => runningBotUsernames.indexOf(name) === -1);
+        if (newBotNames.length > 0) {
+            let newBots = this.allBots.filter(bot => newBotNames.indexOf(bot.username) !== -1);
+            let newRunningBots = newBots.map(this.createBot.bind(this));
+            this.runningBots = this.runningBots.concat(newRunningBots);
+        }
+
+        return newBotNames.length;
+    }
+
+    async stopOldBots() {
+        await this.loadBots();
+        let runningBotUsernames = this.runningBots.map(telegraf => telegraf.botInfo.username);
+        let allUsernames = this.allBots.map(bot => bot.username);
+        let missingNames = runningBotUsernames.filter(name => allUsernames.indexOf(name) === -1);
+        if (missingNames.length > 0) {
+            let missingBotIds = this.runningBots
+                .filter(telegraf => missingNames.indexOf(telegraf.botInfo.username) !== -1)
+                .map(telegraf => telegraf.botDbId);
+
+            for (const id in missingBotIds) {
+                await this.stopBot({id});
+            }
+        }
+
+        return missingNames.length;
+    }
+
+    async syncBots() {
+        let newBots = await this.launchNewBots();
+        let oldBots = await this.stopOldBots();
+
+        return {newBots, oldBots};
+    }
+
+    async runningBotsInfo() {
+        return this.runningBots.map(telegraf => telegraf.botInfo);
     }
 }

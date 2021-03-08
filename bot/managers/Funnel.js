@@ -13,6 +13,10 @@ module.exports = class Funnel {
         await this.loadStages();
     }
 
+    getId() {
+        return this.funnelId;
+    }
+
     async loadFunnel() {
         let db = await getDb();
         this.funnel = await db.collection('funnels').findOne({id: this.funnelId});
@@ -40,12 +44,41 @@ module.exports = class Funnel {
         let db = await getDb();
         let {userId, chatId} = ctx.session;
 
-        return db.collection('stageLogs').insertOne({
+        return db.collection('funnelActivity').insertOne({
             date: moment().unix(),
+            type: 'stage',
             userId,
             chatId,
             stageId: stage.id,
             funnelId: stage.funnelId,
+        });
+    }
+
+    async logButton(buttonId, ctx, funnelId = null, mailingId = null) {
+        let db = await getDb();
+        let {userId, chatId} = ctx.session;
+        let srcStageId = null;
+        let dstStageId = null;
+        let index;
+        let isStageButton = buttonId.indexOf('stage:') === 0;
+
+        if (isStageButton) {
+            [ ,srcStageId, dstStageId, index] = buttonId.split(':');
+        }
+        else {
+            [, mailingId, index] = buttonId.split(':');
+        }
+
+        return db.collection('funnelActivity').insertOne({
+            date: moment().unix(),
+            type: 'button',
+            userId,
+            chatId,
+            index,
+            srcStageId,
+            dstStageId,
+            funnelId,
+            mailingId
         });
     }
 

@@ -9,6 +9,7 @@
     "watch": "vue-cli-service build --watch --mode development"
   },
   "dependencies": {
+    "@mdi/js": "^5.9.55",
     "axios": "^0.21.0",
     "core-js": "^3.6.5",
     "moment": "^2.29.1",
@@ -16,6 +17,7 @@
     "vue-plotly": "^1.1.0",
     "vue-router": "^3.2.0",
     "vue-trix": "^1.2.0",
+    "vue-visjs": "^0.4.2",
     "vuetify": "^2.2.11",
     "vuex": "^3.4.0"
   },
