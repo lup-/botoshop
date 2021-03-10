@@ -95,4 +95,27 @@ module.exports = class Funnel {
             funnelId: stage.funnelId,
         });
     }
+
+    async saveMessage(ctx) {
+        const db = await getDb();
+        const message = ctx.update.message;
+        const messageId = message.message_id;
+        const chatId = message.chat_id || ctx.chat.id;
+        const funnelId = ctx.funnel.getId();
+        const botId = ctx.botInfo.id;
+        const stageId = ctx.scene && ctx.scene.state && ctx.scene.state.stage && ctx.scene.state.stage.id;
+
+        let chat = {id: chatId, botId, user: message.from, chat: ctx.chat}
+        let saveMessage = {chatId, funnelId, botId, stageId, received: moment().unix()}
+
+        await db.collection('chats').updateOne({id: chatId, botId}, {
+            $set: {unread: true, lastMessage: moment().unix()},
+            $setOnInsert: chat,
+        }, {upsert: true, returnOriginal: false});
+
+        await db.collection('messages').updateOne({botId, messageId}, {
+            $set: {message},
+            $setOnInsert: saveMessage
+        }, {upsert: true, returnOriginal: false});
+    }
 }

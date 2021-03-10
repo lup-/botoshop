@@ -13,6 +13,7 @@ const stages = require('./routes/stages');
 const files = require('./routes/files');
 const bots = require('./routes/bots');
 const go = require('./routes/go');
+const chat = require('./routes/chat');
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -67,6 +68,16 @@ router
 router
     .post('/api/file/link', upload.single('file'), files.getLink.bind(files))
     .post('/api/file/delete', files.deleteFile.bind(files));
+
+router
+    .post('/api/chat/list', chat.list.bind(chat))
+    .post('/api/chat/unread', chat.listUnread.bind(chat))
+    .post('/api/chat/read', chat.markRead.bind(chat))
+    .post('/api/chat/delete', chat.delete.bind(chat))
+    .post('/api/chat/history', chat.history.bind(chat))
+    .post('/api/chat/reply', chat.reply.bind(chat))
+    .get('/api/chat/:id', chat.load.bind(chat))
+    .post('/api/chat/:id', chat.load.bind(chat));
 
 router
     .get('/go/:linkId/:stageId/:chatId/:botId', go.go);

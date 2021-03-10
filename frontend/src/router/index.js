@@ -18,6 +18,7 @@ import FunnelBuilder from '../components/Funnels/Builder';
 import FunnelsList from '../components/Funnels/List';
 import StagesEdit from '../components/Stages/Edit';
 import StagesList from '../components/Stages/List';
+import DirectChat from "@/components/Chats/DirectChat";
 
 import store from "../store";
 
@@ -47,6 +48,7 @@ const routes = [
     { name: 'stagesList', path: '/funnels/:funnelId/stages/', component: StagesList, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stageNew', path: '/funnels/:funnelId/stages/new', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stageEdit', path: '/funnels/:funnelId/stages/:id', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'chats', path: '/chats', component: DirectChat, meta: {requiresAuth: true, group: 'chats'} },
 ]
 
 const router = new VueRouter({

@@ -20,7 +20,17 @@ module.exports = {
         filter = Object.assign(defaultFilter, filter);
 
         let db = await getDb(DB_NAME);
-        let items = await db.collection(COLLECTION_NAME).find(filter).toArray();
+        let items = await db.collection(COLLECTION_NAME).aggregate([
+            {$match: filter},
+            {$lookup: {
+                    from: 'stages',
+                    localField: 'id',
+                    foreignField: 'funnelId',
+                    as: 'stages'
+                }
+            }
+        ]).toArray();
+
         let response = {};
         response[ITEMS_NAME] = items;
 

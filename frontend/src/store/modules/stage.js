@@ -26,6 +26,16 @@ export default {
             return itemId => {
                 return state.list.find(item => item.id === itemId);
             }
+        },
+        byFunnelAndId(state, getters, rootState)  {
+            return (funnelId, stageId) => {
+                let funnel = rootState.funnel.list.find(funnel => funnel.id === funnelId);
+                if (!funnel) {
+                    return null;
+                }
+
+                return funnel.stages.find(item => item.id === stageId);
+            }
         }
     },
     actions: {

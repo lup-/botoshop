@@ -42,9 +42,12 @@ module.exports = function () {
                     ctx.scene.state.stage = nextStage;
                 }
             }
-        }
 
-        return ctx.scene.reenter();
+            return ctx.scene.reenter();
+        }
+        else if (answer) {
+            await ctx.funnel.saveMessage(ctx);
+        }
     });
 
     scene.action(/goto\/(.*?)\/(.*)/, async ctx => {

@@ -9,6 +9,7 @@ import subscriber from "./modules/subscriber";
 import funnel from "./modules/funnel";
 import stage from "./modules/stage";
 import bot from "./modules/bot";
+import chat from "./modules/chat";
 
 Vue.use(Vuex);
 
@@ -19,6 +20,7 @@ export default new Vuex.Store({
         loading: false,
         routes: [
             {code: 'statsDetails', title: 'Статистика', icon: 'mdi-database'},
+            {code: 'chats', title: 'Переписка', icon: 'mdi-chat'},
             {code: 'mailingsList', title: 'Рассылки', icon: 'mdi-email'},
             {code: 'botsList', title: 'Боты', icon: 'mdi-robot'},
             {code: 'funnelsList', title: 'Воронки', icon: 'mdi-filter-variant'},
@@ -57,6 +59,7 @@ export default new Vuex.Store({
         subscriber,
         funnel,
         stage,
-        bot
+        bot,
+        chat
     }
 })
