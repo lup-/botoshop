@@ -28,6 +28,10 @@ module.exports = {
                     foreignField: 'funnelId',
                     as: 'stages'
                 }
+            },
+            {$project: {
+                    "stages.photos": 0,
+                }
             }
         ]).toArray();
 
