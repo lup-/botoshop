@@ -242,12 +242,18 @@
                 await this.$store.dispatch('stage/newItem', {item: newNode, funnelId: this.funnelId});
                 let newStage = this.$store.state.stage.lastSavedItem;
 
-                let previousStage = this.$store.getters["stage/byId"](previousStageData.id);
-                if (!previousStage.buttons) {
-                    previousStage.buttons = [];
+                if (previousStageData && previousStageData.id) {
+                    let previousStage = this.$store.getters["stage/byId"](previousStageData.id);
+                    if (!previousStage.buttons) {
+                        previousStage.buttons = [];
+                    }
+                    previousStage.buttons.push({
+                        text: previousStageData.buttonText,
+                        type: 'stage',
+                        target: newStage.id
+                    });
+                    await this.$store.dispatch('stage/saveItem', {item: previousStage, funnelId: this.funnelId});
                 }
-                previousStage.buttons.push({text: previousStageData.buttonText, type: 'stage', target: newStage.id});
-                await this.$store.dispatch('stage/saveItem', {item: previousStage, funnelId: this.funnelId});
                 this.resetAddStageDialog();
                 this.updateGraph();
             },
@@ -434,6 +440,17 @@
                         })
                     }
 
+                    if (stage.hasTimer) {
+                        edges.push({
+                            'id': stage.id + ':' + stage.nextStage + ':timer',
+                            'from': stage.id,
+                            'to': stage.nextStage,
+                            'dashes': [10, 18],
+                            'value': this.getStageShows(stage.nextStage),
+                            'label': this.getStagePercent(stage, stage.nextStage)+'%', 'font': { align: "bottom", color: '#3e7ce2' }
+                        })
+                    }
+
                     let hasButtons = stage.buttons && stage.buttons.length > 0;
                     if (!hasButtons) {
                         return edges;
@@ -444,7 +461,7 @@
 
                     if (nextStageButtons.length > 0) {
                         edges = edges.concat(nextStageButtons.filter(button => {
-                            let duplicateLink = stage.needsAnswer && button.target === stage.nextStage;
+                            let duplicateLink = (stage.needsAnswer || stage.hasTimer) && button.target === stage.nextStage;
                             return Boolean(button.target) && !duplicateLink;
                         }).map(button => {
                             return {

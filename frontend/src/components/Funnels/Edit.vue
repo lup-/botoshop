@@ -17,6 +17,20 @@
                                 </v-col>
                             </v-row>
 
+                            <v-row class="mt-4">
+                                <v-col cols="12">
+                                    <v-select
+                                            label="Резервная воронка"
+                                            :items="allOtherFunnels"
+                                            item-text="title"
+                                            item-value="id"
+                                            v-model="item.fallback"
+                                            clearable
+                                            hint="После срабатывания этапа с точным таймером вся воронка перестает рабоать. Тут можно задать воронку для опаздавших"
+                                    ></v-select>
+                                </v-col>
+                            </v-row>
+
                         </v-form>
                     </v-card-text>
                     <v-card-actions>
@@ -45,6 +59,11 @@
                 ROUTE_LIST: 'funnelsList',
                 STORE_MODULE: 'funnel'
             }
+        },
+        computed: {
+            allOtherFunnels() {
+                return this.$store.state.funnel.list.filter(funnel => funnel.id !== this.item.id);
+            },
         }
     }
 </script>

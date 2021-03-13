@@ -4,6 +4,7 @@ const { sendStageMessage } = require('../lib/message');
 
 async function replyWithSceneMessage(ctx, stage) {
     await ctx.funnel.logStage(stage, ctx);
+    await ctx.profile.setFunnelStage(stage.funnelId, stage.id);
 
     let chatId = ctx.chat.id;
     let botId = ctx.botInfo.id;
@@ -36,6 +37,14 @@ module.exports = function () {
         let answer = ctx.update.message.text;
         if (stage && stage.needsAnswer && answer) {
             await ctx.funnel.logAnswer(stage, answer, ctx);
+            if (stage.answerIsPhone) {
+                ctx.session.profile = ctx.profile.setPhone(answer);
+            }
+
+            if (stage.answerIsEmail) {
+                ctx.session.profile = ctx.profile.setEmail(answer);
+            }
+
             if (stage.nextStage) {
                 let nextStage = ctx.funnel.getStageById(stage.nextStage);
                 if (nextStage) {

@@ -1,21 +1,4 @@
-const {getDb} = require('../database');
-
-async function loadProfileByUserId(userId) {
-    const db = await getDb();
-    let profile = await db.collection('profiles').findOne({userId});
-    return profile;
-}
-
-async function initProfile(userId, defaultProfile) {
-    let profile = await loadProfileByUserId(userId);
-    if (!profile) {
-        const db = await getDb();
-        let result = await db.collection('profiles').insertOne(defaultProfile);
-        profile = result && result.ops && result.ops[0] || defaultProfile;
-    }
-
-    return profile;
-}
+const Profile = require('../../managers/Profile');
 
 module.exports = function () {
     return async (ctx, next) => {
@@ -45,19 +28,11 @@ module.exports = function () {
         ctx.session.chatId = chatInfo.id;
         ctx.session.botId = botId;
 
-        let defaultProfile = {
-            id: userId,
-            userId,
-            chatId: chatInfo.id,
-            botId,
-            firstName: fromInfo.first_name,
-            lastName: fromInfo.last_name,
-            userName: fromInfo.username,
-        }
+        let profile = new Profile(userId, ctx, ctx.session.profile);
+        await profile.init();
 
-        if (!ctx.session.profile) {
-            ctx.session.profile = await initProfile(userId, defaultProfile);
-        }
+        ctx.profile = profile;
+        ctx.session.profile = profile.get();
 
         return next();
     }

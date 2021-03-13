@@ -32,7 +32,8 @@ module.exports = class Mailer {
     async blockUser(chat, bot) {
         let db = await getDb();
         let now = moment().unix();
-        return db.collection('users').updateOne({id: chat.userId, botId: bot.botId}, {$set: {blocked: now}});
+        await db.collection('users').updateOne({id: chat.userId, botId: bot.botId}, {$set: {blocked: now}});
+        return db.collection('profiles').updateOne({userId: chat.userId, botId: bot.botId}, {$set: {blocked: now}});
     }
 
     setBlockedHandler(blockedHandler) {

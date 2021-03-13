@@ -3,6 +3,7 @@ version: "3"
 services:
   nginx:
     image: nginx
+    restart: ${RESTART}
     ports:
       - ${HTTP_PORT}:80
     volumes:
@@ -14,6 +15,7 @@ services:
 
   backend:
     image: node
+    restart: ${RESTART}
     ports:
       - ${BACKEND_DEBUG_PORT}:9229
     depends_on:
@@ -33,6 +35,7 @@ services:
 
   bot:
     image: node
+    restart: ${RESTART}
     ports:
       - ${BOT_DEBUG_PORT}:9229
     depends_on:
@@ -48,6 +51,7 @@ services:
       - MAILINGS_CHECK_INTERVAL_SEC=${MAILINGS_CHECK_INTERVAL_SEC}
       - PAYMENT_CHECK_INTERVAL_SEC=${PAYMENT_CHECK_INTERVAL_SEC}
       - PAYMENT_STATUS_CHECK_INTERVAL_SEC=${PAYMENT_STATUS_CHECK_INTERVAL_SEC}
+      - STAGEMAILER_CHECK_INTERVAL_SEC=${STAGEMAILER_CHECK_INTERVAL_SEC}
       - TEST_USER_ID=${TEST_USER_ID}
       - TEST_CHAT_ID=${TEST_CHAT_ID}
       - TEST_BOT_ID=${TEST_BOT_ID}
@@ -60,6 +64,7 @@ services:
 
   mongo:
     image: mongo
+    restart: ${RESTART}
     volumes:
       - ./etc/database:/data/db
     ports:

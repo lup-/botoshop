@@ -40,6 +40,19 @@ module.exports = class Funnel {
         return startingStage;
     }
 
+    isFinished() {
+        return this.funnel && this.funnel.finished && this.funnel.finished > 0;
+    }
+
+    async switchToFallback() {
+        if (!this.funnel.fallback) {
+            return false;
+        }
+
+        this.funnelId = this.funnel.fallback;
+        return this.init();
+    }
+
     async logStage(stage, ctx) {
         let db = await getDb();
         let {userId, chatId} = ctx.session;
@@ -53,6 +66,20 @@ module.exports = class Funnel {
             funnelId: stage.funnelId,
         });
     }
+
+    async logStageTimer(stage, userId, chatId) {
+        let db = await getDb();
+        return db.collection('funnelActivity').insertOne({
+            date: moment().unix(),
+            type: 'stage',
+            userId,
+            chatId,
+            timer: true,
+            stageId: stage.id,
+            funnelId: stage.funnelId,
+        });
+    }
+
 
     async logButton(buttonId, ctx, funnelId = null, mailingId = null) {
         let db = await getDb();
