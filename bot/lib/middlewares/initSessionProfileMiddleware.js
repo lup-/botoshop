@@ -10,10 +10,6 @@ module.exports = function () {
             return next();
         }
 
-        if (ctx.session.profile) {
-            return next();
-        }
-
         const fromInfo = ctx.update.callback_query
             ? ctx.update.callback_query.from
             : ctx.update.message.from;
@@ -24,15 +20,20 @@ module.exports = function () {
         const userId = fromInfo.id;
         const botId = ctx.botInfo.id;
 
-        ctx.session.userId = userId;
-        ctx.session.chatId = chatInfo.id;
-        ctx.session.botId = botId;
+        if (!ctx.session.profile) {
+            ctx.session.userId = userId;
+            ctx.session.chatId = chatInfo.id;
+            ctx.session.botId = botId;
+        }
 
         let profile = new Profile(userId, ctx, ctx.session.profile);
         await profile.init();
 
         ctx.profile = profile;
-        ctx.session.profile = profile.get();
+
+        if (!ctx.session.profile) {
+            ctx.session.profile = profile.get();
+        }
 
         return next();
     }
