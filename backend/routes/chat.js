@@ -40,10 +40,22 @@ module.exports = {
     },
     async listUnread(ctx) {
         const db = await getDb();
-        let chats = await db.collection('chats').find({
-            unread: true,
-            deleted: {$in: [null, false]},
-        }).toArray();
+        let chats = await db.collection('chats').aggregate([
+            { $match: {unread: true, deleted: {$in: [null, false]}} },
+            { $lookup: {
+                    from: "messages",
+                    localField: "id",
+                    foreignField: "chatId",
+                    as: "unreadMessages"
+                }
+            },
+            { $set: {
+                    unreadMessages: {
+                        $filter: {input: "$unreadMessages", as: "message", cond: {$gte: ["$$message.received", "$lastRead"]}}
+                    }
+                }
+            }
+        ]).toArray();
 
         ctx.body = {chats};
     },
@@ -95,6 +107,7 @@ module.exports = {
         const botId = ctx.request.body.botId;
         const funnelId = ctx.request.body.funnelId;
         const text =  ctx.request.body.text;
+        const newChat = ctx.request.body.newChat || false;
 
         if (!chatId || !text) {
             ctx.body = {sent: false};
@@ -105,6 +118,15 @@ module.exports = {
         let bot = await db.collection('bots').findOne({botId});
         let token = bot.token;
         let telegram = new Telegraf(token, {telegram: {apiRoot: API_ROOT}}).telegram;
+
+        if (newChat) {
+            let chat = {id: chatId, botId, user: newChat.user, chat: newChat.chat, startedByBot: true};
+
+            await db.collection('chats').updateOne({id: chatId, botId}, {
+                $set: {unread: true, lastMessage: moment().unix()},
+                $setOnInsert: chat,
+            }, {upsert: true, returnOriginal: false});
+        }
 
         let message;
         let error;
@@ -118,6 +140,8 @@ module.exports = {
                 $set: {message},
                 $setOnInsert: saveMessage
             }, {upsert: true, returnOriginal: false});
+
+            await db.collection('chats').updateOne({id: chatId, botId}, {$set: {lastRead: moment().unix()}});
         }
         catch (e) {
             sent = false;

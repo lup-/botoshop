@@ -33,7 +33,7 @@
                                 </v-col>
                             </v-row>
 
-                            <v-row class="mt-4" v-if="item.funnels && item.funnels.length > 1 && item.username">
+                            <v-row class="mt-4" v-if="item.funnels && item.funnels.length > 0 && item.username">
                                 <v-col cols="12" v-for="funnelId in item.funnels" :key="funnelId">
                                     <v-text-field disabled :value="getFunnelLink(funnelId)" :label="getFunnelName(funnelId)"></v-text-field>
                                 </v-col>

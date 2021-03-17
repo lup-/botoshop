@@ -7,9 +7,37 @@ export default {
         chats: [],
         allChats: [],
         unread: [],
+        newChats: [],
         chatHistory: [],
     },
     actions: {
+        addChat({commit}, chat) {
+            let profile = chat.profile;
+
+            let newChat = {
+                "botId": profile.botId,
+                "id": profile.id,
+                "chat":{
+                    "id": profile.chatId,
+                    "first_name": profile.firstName,
+                    "last_name": profile.lastName,
+                    "username": profile.userName,
+                    "type":"private"
+                },
+                "lastMessage": false,
+                "unread": true,
+                "user": {
+                    "id": profile.id,
+                    "is_bot": false,
+                    "first_name": profile.firstName,
+                    "last_name": profile.lastName,
+                    "username": profile.userName,
+                    "language_code":"ru"
+                }
+            }
+
+            commit('addUnreadChat', newChat);
+        },
         async loadChat({commit}, {chatId, botId}) {
             let response = await axios.post(`/api/chat/${botId}/${chatId}`, {});
 
@@ -51,8 +79,14 @@ export default {
 
             return dispatch('reloadChats');
         },
-        async reply({dispatch}, {id, botId, funnelId, text}) {
-            await axios.post(`/api/chat/reply`, {id, botId, funnelId, text});
+        async reply({dispatch, state}, {id, botId, funnelId, text}) {
+            let data = {id, botId, funnelId, text};
+            let newChat = state.newChats.find(newChat => newChat.id === id && newChat.botId === botId);
+            if (newChat) {
+                data['newChat'] = newChat;
+            }
+
+            await axios.post(`/api/chat/reply`, data);
             return dispatch('loadChatHistory', {id, botId});
         },
         async markRead({dispatch}, {chatId, botId}) {
@@ -72,6 +106,14 @@ export default {
         },
         setUnreadChats(state, chats) {
             state.unread = chats;
+            state.newChats = state.newChats.filter(newChat => {
+                let receivedNewChat = chats.find(recChat => recChat.chat.id === newChat.chat.id && recChat.botId === newChat.botId);
+                return !receivedNewChat;
+            });
+
+            if (state.newChats && state.newChats.length > 0) {
+                state.unread = state.unread.concat(state.newChats);
+            }
         },
         setChatFilter(state, filter) {
             state.filter = filter;
@@ -79,5 +121,9 @@ export default {
         setChatHistory(state, history) {
             state.chatHistory = history;
         },
+        addUnreadChat(state, chat) {
+            state.unread.push(chat);
+            state.newChats.push(chat);
+        }
     }
 }

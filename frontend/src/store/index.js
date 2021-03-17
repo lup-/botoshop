@@ -5,7 +5,7 @@ import mailing from "./modules/mailing";
 import stats from "./modules/stats";
 import user from "./modules/user";
 import payment from "./modules/payment";
-import subscriber from "./modules/subscriber";
+import profile from "./modules/profile";
 import funnel from "./modules/funnel";
 import stage from "./modules/stage";
 import bot from "./modules/bot";
@@ -56,7 +56,7 @@ export default new Vuex.Store({
         stats,
         user,
         payment,
-        subscriber,
+        profile,
         funnel,
         stage,
         bot,

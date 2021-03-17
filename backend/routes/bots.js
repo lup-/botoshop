@@ -90,6 +90,10 @@ module.exports = {
             delete itemData._id;
         }
 
+        if (itemData.stages) {
+            delete itemData.stages;
+        }
+
         if (itemData.token) {
             let {username, id} = itemData.token ? await this.getBotParams(itemData.token) : {username: null, id: null};
             itemData.username = username;

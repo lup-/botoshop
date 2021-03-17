@@ -64,7 +64,7 @@ class Injector {
     addSafeReply(blockedHandler = null, errorsHandler = null) {
         let safeReply = new safeReplyMiddleware();
 
-        errorsHandler = errorsHandler ? errorsHandler : catchErrors;
+        errorsHandler = errorsHandler ? errorsHandler : catchErrors(blockedHandler);
 
         safeReply.setDefaultFallback(errorsHandler);
 

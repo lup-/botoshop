@@ -1,5 +1,8 @@
 <template>
     <v-container class="fill-height align-start content-container" fluid>
+        <v-btn fab bottom right fixed large color="primary" @click="showChatSearch = true">
+            <v-icon>mdi-plus</v-icon>
+        </v-btn>
         <v-tabs v-model="selectedFunnelIndex">
             <v-tab v-for="funnel in activeFunnels" :key="funnel.id">{{funnel.title}}</v-tab>
         </v-tabs>
@@ -14,7 +17,10 @@
                     >
                         <v-list-item v-for="chat in unreadChats" :key="chat.id">
                             <v-list-item-content>
-                                <v-list-item-title>{{getChatTitle(chat.user)}}</v-list-item-title>
+                                <v-list-item-title v-if="chat.unreadMessages.length > 0">
+                                    <v-badge color="error" :content="chat.unreadMessages.length">{{getChatTitle(chat.user)}}</v-badge>
+                                </v-list-item-title>
+                                <v-list-item-title v-else>{{getChatTitle(chat.user)}}</v-list-item-title>
                             </v-list-item-content>
                             <v-list-item-action>
                                 <v-btn icon @click="markRead(chat)"><v-icon>mdi-eye-off</v-icon></v-btn>
@@ -40,7 +46,15 @@
 
                     <v-card-text v-html="message.message.text" class="pt-0"></v-card-text>
                 </v-card>
-                <v-container class="footer p-0" fluid>
+            </v-col>
+            <v-col cols="12" md="9" class="d-flex flex-column pt-4 text-center" v-else>
+                Чат не выбран
+            </v-col>
+        </v-row>
+        <v-footer fixed v-if="selectedChat" class="white">
+            <v-col cols="12" md="3"></v-col>
+            <v-col cols="12" md="9">
+                <v-container class="p-0" fluid>
                     <v-sheet class="p-2">
                         <v-row>
                             <v-col cols="12">
@@ -49,24 +63,29 @@
                         </v-row>
                         <v-row>
                             <v-col cols="12">
-                                <v-btn @click="sendReply">Отправить ответ <v-icon>mdi-telegram</v-icon></v-btn>
+                                <v-btn @click="sendReply">Отправить<v-icon>mdi-telegram</v-icon></v-btn>
                             </v-col>
                         </v-row>
                     </v-sheet>
                 </v-container>
             </v-col>
-            <v-col cols="12" md="9" class="d-flex flex-column pt-4 text-center" v-else>
-                Чат не выбран
-            </v-col>
-        </v-row>
+        </v-footer>
+        <chat-search-dialog
+            v-model="newChat"
+            :show-input="showChatSearch"
+            @cancel="showChatSearch = false"
+            @save="addChat"
+        ></chat-search-dialog>
     </v-container>
 </template>
 
 <script>
     import moment from "moment";
+    import ChatSearchDialog from "@/components/Chats/ChatSearchDialog";
 
     export default {
         name: "DirectChat",
+        components: {ChatSearchDialog},
         async mounted() {
             await this.loadBots();
             await this.loadFunnels();
@@ -83,9 +102,22 @@
                 reply: {},
                 pollIntervalId: false,
                 pollMs: 10000,
+                showChatSearch: false,
+                newChat: false,
             }
         },
         methods: {
+            async addChat() {
+                if (!this.newChat) {
+                    return;
+                }
+
+                await this.$store.dispatch('addChat', this.newChat);
+                let {funnelId} = this.newChat.profile;
+                this.selectedFunnelIndex = this.activeFunnels.findIndex(funnel => funnel.id === funnelId);
+                this.selectedChatIndex = this.unreadChats.length - 1;
+                this.showChatSearch = false;
+            },
             loadFunnels() {
                 return this.$store.dispatch('funnel/loadItems');
             },

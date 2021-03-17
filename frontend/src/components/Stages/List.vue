@@ -8,6 +8,7 @@
             </v-btn>
             <v-col cols="12">
                 <v-row class="text-h6 py-6">Воронка: {{funnel ? funnel.title : '-'}}</v-row>
+                <v-row><v-btn @click="gotoBuilder">К конструктору</v-btn></v-row>
             </v-col>
             <v-col cols="12">
                 <v-data-table
@@ -37,9 +38,7 @@
 </template>
 
 <script>
-    function clone(obj) {
-        return JSON.parse(JSON.stringify(obj));
-    }
+    import clone from "lodash.clonedeep"
 
     export default {
         data() {
@@ -78,6 +77,9 @@
             },
             gotoNew() {
                 this.$router.push({name: this.ROUTE_NEW, params: {funnelId: this.funnelId}});
+            },
+            gotoBuilder() {
+                this.$router.push({name: 'funnelBuilderEdit', params: {id: this.funnelId}});
             },
             getNewItem(item) {
                 return item;

@@ -36,6 +36,26 @@ export default {
 
                 return funnel.stages.find(item => item.id === stageId);
             }
+        },
+        byFunnelIds(state, getters, rootState) {
+            return (funnelIds) => {
+                if (!funnelIds) {
+                    return [];
+                }
+
+                return rootState.funnel.list.reduce( (stages, funnel) => {
+                    let skipFunnel = funnelIds.indexOf(funnel.id) === -1;
+                    if (skipFunnel) {
+                        return stages;
+                    }
+
+                    if (!funnel.stages) {
+                        return stages;
+                    }
+
+                    return stages.concat( funnel.stages );
+                }, [])
+            }
         }
     },
     actions: {

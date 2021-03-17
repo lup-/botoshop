@@ -17,6 +17,8 @@
                             <v-btn text :disabled="!selectedEdge" @click="showEditEdgeDialog"><v-icon>mdi-pencil-circle</v-icon></v-btn>
                             <v-btn text :disabled="!selectedEdge"><v-icon>mdi-delete-circle</v-icon></v-btn>
                         </v-btn-toggle>
+                        <v-divider vertical class="mx-6"></v-divider>
+                        <v-btn @click="gotoStagesList">К списку</v-btn>
                     </v-toolbar>
 
                     <v-card-title>{{isNew ? 'Новая воронка' : 'Редактирование воронки'}}</v-card-title>
@@ -155,20 +157,19 @@
                 let itemId = nodes[0];
                 let isNode = itemId && itemId.indexOf(':') === -1;
                 let isLinkNode = itemId && itemId.indexOf(':link:') !== -1;
+                let stageId;
 
                 if (isNode) {
-                    let stageId = itemId;
-                    let {x, y} = pointer.canvas;
-                    this.$store.dispatch('stage/saveXYPosition', {stageId, x, y});
+                    stageId = itemId;
+                    this.$store.dispatch('stage/saveXYPosition', {stageId, x: pointer.canvas.x, y: pointer.canvas.y});
                 }
 
                 if (isLinkNode) {
-                    let [stageId, , linkIndex] = itemId.split(':');
-                    linkIndex = parseInt(linkIndex);
-                    let {x, y} = pointer.canvas;
-                    this.$store.dispatch('stage/saveLinkXYPosition', {stageId, linkIndex, x, y});
+                    let idParts = itemId.split(':');
+                    stageId = idParts[0];
+                    let linkIndex = parseInt(idParts[2]);
+                    this.$store.dispatch('stage/saveLinkXYPosition', {stageId, linkIndex, x: pointer.canvas.x, y: pointer.canvas.y});
                 }
-                console.log(nodes, pointer);
             },
             showNewNodeDialog() {
                 if (this.selectedNode) {
@@ -276,6 +277,9 @@
             async gotoSelectedStage() {
                 let stageId = this.selectedNode;
                 this.$router.push({name: 'stageEdit', params: {id: stageId, funnelId: this.funnelId}});
+            },
+            async gotoStagesList() {
+                this.$router.push({name: 'stagesList', params: {funnelId: this.funnelId}});
             },
             async addButton() {
                 let srcStage = this.$store.getters["stage/byId"](this.newEdge.srcStageId);
@@ -398,14 +402,19 @@
                 });
 
                 let linkNodes = this.stages.reduce( (nodes, stage) => {
-                    let linkButtons = stage.buttons ? stage.buttons.filter(button => button.type === 'link') : [];
+                    let linkButtons = stage.buttons
+                        ? stage.buttons
+                            .map( (button, originalIndex) => ({...button, originalIndex}) )
+                            .filter(button => button.type === 'link')
+                        : [];
+
                     if (linkButtons.length === 0) {
                         return nodes;
                     }
 
-                    nodes = nodes.concat(linkButtons.map((button, index) => {
+                    nodes = nodes.concat(linkButtons.map(button => {
                         let node = {
-                            id: stage.id + ':link:' + index,
+                            id: stage.id + ':link:' + button.originalIndex,
                             shape: 'square',
                             value: 0,
                             label: button.text,
@@ -457,7 +466,9 @@
                     }
 
                     let nextStageButtons = stage.buttons.filter(button => button.type === 'stage');
-                    let linkButtons = stage.buttons.filter(button => button.type === 'link');
+                    let linkButtons = stage.buttons
+                        .map( (button, originalIndex) => ({...button, originalIndex}) )
+                        .filter(button => button.type === 'link')
 
                     if (nextStageButtons.length > 0) {
                         edges = edges.concat(nextStageButtons.filter(button => {
@@ -469,19 +480,19 @@
                                 'from': stage.id,
                                 'to': button.target,
                                 'value': button.shows,
-                                'label': this.getButtonPercent(stage, button)+'%', 'font': { align: "bottom", color: '#3e7ce2' }
+                                'label': button.text + ': ' + this.getButtonPercent(stage, button)+'%', 'font': { align: "bottom", color: '#3e7ce2' }
                             }
                         }));
                     }
 
                     if (linkButtons.length > 0) {
-                        edges = edges.concat(linkButtons.map((button, index) => {
+                        edges = edges.concat(linkButtons.map(button => {
                             return {
-                                'id': stage.id + ':hrefButton' + index,
+                                'id': stage.id + ':hrefButton' + button.originalIndex,
                                 'from': stage.id,
-                                'to': stage.id + ':link:' + index,
+                                'to': stage.id + ':link:' + button.originalIndex,
                                 'value': button.shows,
-                                'label': this.getButtonPercent(stage, button)+'%', 'font': { align: "bottom", color: '#3e7ce2' }
+                                'label': button.text + ': ' + this.getButtonPercent(stage, button)+'%', 'font': { align: "bottom", color: '#3e7ce2' }
                             }
                         }));
                     }

@@ -7,7 +7,7 @@ const stats = require('./routes/stats');
 const mailings = require('./routes/mailings');
 const users = require('./routes/users');
 const payments = require('./routes/payments');
-const subscribers = require('./routes/subscribers');
+const profiles = require('./routes/profiles');
 const funnels = require('./routes/funnels');
 const stages = require('./routes/stages');
 const files = require('./routes/files');
@@ -36,8 +36,7 @@ router
     .post('/api/payment/list', payments.list.bind(payments));
 
 router
-    .post('/api/subscriber/list', subscribers.list.bind(subscribers))
-    .post('/api/subscriber/update', subscribers.update.bind(subscribers));
+    .post('/api/profile/list', profiles.list.bind(profiles));
 
 router
     .post('/api/bots/list', bots.list.bind(bots))

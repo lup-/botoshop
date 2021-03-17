@@ -85,7 +85,7 @@ module.exports = {
             return null;
         }).filter(tag => tag !== null).filter((tag, index, allTags) => allTags.indexOf(tag) === index) : [];
 
-        let replaceTags = [{from: 'em', to: 'b'}];
+        let replaceTags = [{from: 'em', to: 'i'}, {from: 'strong', to: 'b'}];
         replaceTags.map(replaceData => {
             html = html.replace( new RegExp('<(\/?)'+replaceData.from+'( *[^>]*)>', 'g'), '<$1'+replaceData.to+'$2>' );
         });

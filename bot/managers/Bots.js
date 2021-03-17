@@ -10,10 +10,17 @@ module.exports = class BotManager {
         this.botFunnels = [];
     }
 
+    async blockedHandler(ctx, next) {
+        if (ctx && ctx.profile) {
+            await ctx.profile.setBlocked();
+        }
+        return next();
+    }
+
     createBot(bot) {
         let app = setupBot(bot.token)
             .addSession({})
-            .addSafeReply()
+            .addSafeReply(this.blockedHandler)
             .addIdsToSession()
             .addRefSave()
             .addUserSave()

@@ -195,6 +195,12 @@
                                                 hint="С даты отправки этапа. Например: 3"
                                                 persistent-hint
                                         ></v-text-field>
+                                        <v-text-field v-if="item.timerType === 'seconds'"
+                                                v-model="timerValue"
+                                                label="Сколько секунд ждать"
+                                                hint="Если 0 следующий этап уйдет сразу. Секунд не должно быть много, пожалуйста. Например: 3"
+                                                persistent-hint
+                                        ></v-text-field>
                                     </v-col>
                                     <v-col cols="12">
                                         <v-select v-if="item.hasTimer"
@@ -241,6 +247,7 @@
                     {text: 'Ссылка', value: 'link'},
                 ],
                 timerTypes: [
+                    {text: 'Через несколько секунд', value: 'seconds'},
                     {text: 'Точная дата', value: 'exact'},
                     {text: 'В ближайший день недели', value: 'dayOfWeek'},
                     {text: 'Через точное количество дней', value: 'inSomeDays'}
@@ -328,6 +335,7 @@
 
                 if (this.item.hasTimer) {
                     switch (this.item.timerType) {
+                        case "seconds":
                         case "dayOfWeek":
                         case "inSomeDays":
                             saveItem.timerValue = parseInt(this.timerValue);

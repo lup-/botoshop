@@ -9,8 +9,20 @@ async function replyWithSceneMessage(ctx, stage) {
     let chatId = ctx.chat.id;
     let botId = ctx.botInfo.id;
     let telegram = ctx.telegram;
+    let results = [];
 
-    return sendStageMessage(telegram, chatId, stage, botId);
+    try {
+        results = await sendStageMessage(telegram, chatId, stage, botId);
+    }
+    catch (e) {
+        console.log(e);
+    }
+
+    return results;
+}
+
+async function scheduleAutoSend(chatId, botId, telegram, stage) {
+
 }
 
 module.exports = function () {
@@ -24,6 +36,11 @@ module.exports = function () {
         }
 
         let messages = await replyWithSceneMessage(ctx, stage);
+
+        if (stage && stage.hasTimer === true && stage.timerType === 'seconds') {
+            await scheduleAutoSend(ctx.chat.id, ctx.botInfo.id, ctx.telegram, stage);
+        }
+
         return messages;
     });
 

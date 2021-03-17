@@ -6,8 +6,6 @@ import Details from "../components/Stats/Details";
 import MailingsList from "../components/Mailings/List";
 import MailingEdit from "../components/Mailings/Edit";
 import PaymentsList from "../components/Payments/List";
-import SubscribersList from "../components/Subscribers/List";
-import SubscriberEdit from "../components/Subscribers/Edit";
 import Login from '../components/Users/Login';
 import UsersEdit from '../components/Users/Edit';
 import UsersList from '../components/Users/List';
@@ -31,8 +29,6 @@ const routes = [
     { name: 'mailingsList', path: '/mailings/', component: MailingsList, meta: {requiresAuth: true, group: 'mailingsList'} },
     { name: 'mailingNew', path: '/mailings/new', component: MailingEdit, meta: {requiresAuth: true, group: 'mailingsList'} },
     { name: 'mailingEdit', path: '/mailings/:id', component: MailingEdit, meta: {requiresAuth: true, group: 'mailingsList'} },
-    { name: 'subscribersList', path: '/subscribers/', component: SubscribersList, meta: {requiresAuth: true, group: 'subscribersList'} },
-    { name: 'subscriberEdit', path: '/subscribers/:id', component: SubscriberEdit, meta: {requiresAuth: true, group: 'subscribersList'} },
     { name: 'paymentsList', path: '/payments/', component: PaymentsList, meta: {requiresAuth: true, group: 'paymentsList'} },
     { name: 'usersList', path: '/users/', component: UsersList, meta: {requiresAuth: true, group: 'usersList'} },
     { name: 'userNew', path: '/users/new', component: UsersEdit, meta: {requiresAuth: true, group: 'usersList'} },

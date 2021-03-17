@@ -27,6 +27,10 @@ export default function (params) {
         },
         actions: {
             async loadItems({commit}, filter = {}) {
+                if (!API_LIST_URL) {
+                    return;
+                }
+
                 let response = await axios.post(API_LIST_URL, {filter});
                 await commit('setFilter', filter);
                 return commit('setItems', response.data[NAME_ITEMS]);
@@ -38,6 +42,10 @@ export default function (params) {
                 }
             },
             async newItem({dispatch, state}, item) {
+                if (!API_ADD_URL) {
+                    return;
+                }
+
                 let query = {};
                 query[NAME_ITEM] = item;
 
@@ -46,6 +54,10 @@ export default function (params) {
                 return dispatch('loadItems', state.filter);
             },
             async saveItem({dispatch, commit, state}, item) {
+                if (!API_UPDATE_URL) {
+                    return;
+                }
+
                 try {
                     let query = {};
                     query[NAME_ITEM] = item;
@@ -66,6 +78,10 @@ export default function (params) {
                 return dispatch('loadItems', state.currentFilter);
             },
             async deleteItem({dispatch, state}, item) {
+                if (!API_DELETE_URL) {
+                    return;
+                }
+
                 let query = {};
                 query[NAME_ITEM] = item;
 
