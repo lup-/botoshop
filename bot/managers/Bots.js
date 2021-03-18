@@ -29,6 +29,15 @@ module.exports = class BotManager {
             .addFunnels(bot, this)
             .addHandleBlocks()
             .addScenes()
+            .addRoute('action', /goto\/(.*?)\/(.*)/, async ctx => {
+                let buttonId = ctx.match[1];
+                let nextStageId = ctx.match[2];
+
+                await ctx.funnel.logButton(buttonId, ctx, ctx.funnel.getId());
+
+                let nextStage = ctx.funnel.getStageById(nextStageId);
+                return ctx.scene.enter('stage', {stage: nextStage});
+            })
             .addDefaultRoute(ctx => ctx.scene.enter('stage'))
             .get();
 

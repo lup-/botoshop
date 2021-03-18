@@ -7,6 +7,7 @@ const Profile = require('./Profile');
 const Funnel = require('./Funnel');
 
 const STAGEMAILER_CHECK_INTERVAL_SEC = process.env.STAGEMAILER_CHECK_INTERVAL_SEC ? parseInt(process.env.STAGEMAILER_CHECK_INTERVAL_SEC) : 60;
+const STAGEMAILER_SECONDS_CHECK_INTERVAL_SEC = process.env.STAGEMAILER_SECONDS_CHECK_INTERVAL_SEC ? parseInt(process.env.STAGEMAILER_SECONDS_CHECK_INTERVAL_SEC) : 10;
 const API_ROOT = process.env.TGAPI_ROOT || 'https://api.telegram.org';
 const UTC_DAILY_HOUR = process.env.UTC_DAILY_HOUR ? parseInt(process.env.UTC_DAILY_HOUR) : 11;
 const DAY_MSEC = 86400 * 1000;
@@ -18,6 +19,7 @@ module.exports = class StageMailer {
         this.bots = [];
         this.dailyLoop = false;
         this.exactLoop = false;
+        this.secondsLoop = false;
 
         if (TEST_MODE) {
             this.nextDailyCheck = moment().unix()+10;
@@ -218,6 +220,50 @@ module.exports = class StageMailer {
         return sendResult;
     }
 
+    async checkAndSendSecondsStages() {
+        let db = await getDb();
+        let now = moment().unix();
+        let stagesToSend = await db.collection('stages').aggregate([
+            { $match: {hasTimer: true, timerType: 'seconds'} },
+            { $lookup: {
+                    from: 'stages',
+                    localField: 'nextStage',
+                    foreignField: 'id',
+                    as: 'nextStageData'
+                }
+            },
+            { $lookup: {
+                    from: 'profiles',
+                    let: {
+                        stageId: "$id",
+                        seconds: "$timerValue",
+                    },
+                    pipeline: [
+                        { $addFields: {sendNextStageAt: {$add: ["$stageTime", "$$seconds"]}} },
+                        { $match: {
+                                $and: [
+                                    { $expr: {$eq:["$stageId", "$$stageId"]} },
+                                    { $expr: {$lte: ["$sendNextStageAt", now]} },
+                                ]
+                            }
+                        }
+                    ],
+                    as: 'profiles'
+                } },
+            { $match: {profiles: {$exists: true, $not: {$size: 0}}} }
+        ]).toArray();
+
+        let stagesFound = stagesToSend && stagesToSend.length > 0;
+        if (!stagesFound) {
+            return;
+        }
+
+        for (let stage of stagesToSend) {
+            let profiles = stage.profiles;
+            await this.sendStagesToProfiles(profiles, [stage]);
+        }
+    }
+
     launchExactCheck() {
         return setTimeout(async () => {
             this.exactLoop = true;
@@ -253,9 +299,21 @@ module.exports = class StageMailer {
         }, 0);
     }
 
+    launchSecondsCheck() {
+        return setTimeout(async () => {
+            this.secondsLoop = true;
+
+            while (this.secondsLoop) {
+                await this.checkAndSendSecondsStages();
+                await wait(STAGEMAILER_SECONDS_CHECK_INTERVAL_SEC);
+            }
+        }, 0);
+    }
+
     launch() {
         this.launchDailyCheck();
         this.launchExactCheck();
+        this.launchSecondsCheck();
     }
 
 }
