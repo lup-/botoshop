@@ -30,6 +30,10 @@ module.exports = function () {
         let profile = new Profile(userId, ctx, ctx.session.profile);
         await profile.init();
 
+        if (profile.botId !== botId) {
+            await profile.setFields({botId});
+        }
+
         ctx.profile = profile;
 
         if (!ctx.session.profile) {

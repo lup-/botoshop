@@ -73,6 +73,13 @@ module.exports = class Profile {
         return this.profile;
     }
 
+    async setFields(fields) {
+        this.profile = Object.assign(this.profile, fields);
+        const db = await getDb();
+        await db.collection('profiles').updateOne({userId: this.userId}, {$set: fields});
+        return this.profile;
+    }
+
     async setFunnelStage(funnelId, stageId) {
         this.profile.funnelId = funnelId;
         this.profile.stageId = stageId;
