@@ -17,7 +17,7 @@
                     >
                         <v-list-item v-for="chat in unreadChats" :key="chat.id">
                             <v-list-item-content>
-                                <v-list-item-title v-if="chat.unreadMessages.length > 0">
+                                <v-list-item-title v-if="chat.unreadMessages && chat.unreadMessages.length > 0">
                                     <v-badge color="error" :content="chat.unreadMessages.length">{{getChatTitle(chat.user)}}</v-badge>
                                 </v-list-item-title>
                                 <v-list-item-title v-else>{{getChatTitle(chat.user)}}</v-list-item-title>

@@ -60,9 +60,11 @@ module.exports = class Mailer {
         }
 
         let db = await getDb();
-        let botIds = mailing.bots;
+        let bots = await this.getMailingBots(mailing);
+        let botTlgIds = bots.map(bot => bot.botId);
+
         let foundUsers = await db.collection('users').find({
-            botId: {$in: botIds},
+            botId: {$in: botTlgIds},
             blocked: {$in: [null, false]},
         }).toArray();
 

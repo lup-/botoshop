@@ -53,7 +53,7 @@ module.exports = class Sender {
         let db = await getDb();
         return db.collection('mailingQueue').find({
             mailing: this.id,
-            bot: this.bot.id,
+            bot: this.bot.botId,
             status: STATUS_NEW,
         }).limit(chunkSize).toArray();
     }

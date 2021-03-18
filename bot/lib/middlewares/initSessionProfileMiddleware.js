@@ -2,7 +2,8 @@ const Profile = require('../../managers/Profile');
 
 module.exports = function () {
     return async (ctx, next) => {
-        if (ctx.chat.type !== 'private') {
+        let isPrivate = ctx.chat && ctx.chat.type === 'private';
+        if (!isPrivate) {
             return next();
         }
 

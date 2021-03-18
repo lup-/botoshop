@@ -83,6 +83,10 @@ module.exports = class Profile {
         return this.profile;
     }
 
+    setUnblocked() {
+        return this.setBlocked(true);
+    }
+
     async setBlocked(unblock = false) {
         let blocked = unblock ? null : moment().unix();
 

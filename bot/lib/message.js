@@ -210,7 +210,9 @@ async function sendMessage(telegram, chatId, message, stage = null, mailing = nu
     let lastMessage = await telegram.sendMessage(chatId, caption, buttons);
     sentMessages.push(lastMessage);
 
-    await saveFileIds(sentMessages, stage);
+    if (stage) {
+        await saveFileIds(sentMessages, stage);
+    }
     return sentMessages;
 }
 

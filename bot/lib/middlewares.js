@@ -8,6 +8,7 @@ const safeReplyMiddleware = require('./middlewares/safeReplyMiddleware');
 const blockNonPrivate = require('./middlewares/blockNonPrivate');
 const catchErrors = require('./middlewares/catchErrors');
 const initFunnel = require('./middlewares/initFunnel');
+const toggleBlockedMiddleware = require('./middlewares/toggleBlockedMiddleware');
 
 module.exports = {
     initSessionIdsMiddleware,
@@ -19,5 +20,6 @@ module.exports = {
     safeReplyMiddleware,
     blockNonPrivate,
     catchErrors,
-    initFunnel
+    initFunnel,
+    toggleBlockedMiddleware
 }

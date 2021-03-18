@@ -27,6 +27,7 @@ module.exports = class BotManager {
             .addProfile()
             .addSaveActivity()
             .addFunnels(bot, this)
+            .addHandleBlocks()
             .addScenes()
             .addDefaultRoute(ctx => ctx.scene.enter('stage'))
             .get();

@@ -94,4 +94,5 @@
 
 <style>
     .v-application .error {z-index: 100}
+    .v-navigation-drawer--fixed {z-index: 1000}
 </style>

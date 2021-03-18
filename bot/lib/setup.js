@@ -13,7 +13,8 @@ const {
     safeReplyMiddleware,
     catchErrors,
     blockNonPrivate,
-    initFunnel
+    initFunnel,
+    toggleBlockedMiddleware
 } = require('./middlewares');
 
 const store = new Map();
@@ -114,6 +115,11 @@ class Injector {
 
     addFunnels(bot, botManager) {
         this.app.use(initFunnel(bot, botManager));
+        return this;
+    }
+
+    addHandleBlocks() {
+        this.app.use(toggleBlockedMiddleware);
         return this;
     }
 
