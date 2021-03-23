@@ -1,0 +1,48 @@
+POST http://localhost:8196/api/export/stages
+Content-Type: application/json
+
+{
+  "stages": {}
+}
+
+###
+
+POST http://localhost:8196/api/export/stages
+Content-Type: application/json
+
+{
+  "stages": {
+    "groupDays": true
+  }
+}
+
+###
+
+POST http://localhost:8196/api/export/buttons
+Content-Type: application/json
+
+{
+  "buttons": {}
+}
+
+###
+
+POST http://localhost:8196/api/export/buttons
+Content-Type: application/json
+
+{
+  "buttons": {
+    "groupDays": true
+  }
+}
+
+###
+
+POST http://localhost:8196/api/export/refs
+Content-Type: application/json
+
+{
+  "refs": {}
+}
+
+###

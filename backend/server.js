@@ -14,6 +14,7 @@ const files = require('./routes/files');
 const bots = require('./routes/bots');
 const go = require('./routes/go');
 const chat = require('./routes/chat');
+const exporter = require('./routes/export');
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -77,6 +78,9 @@ router
     .post('/api/chat/reply', chat.reply.bind(chat))
     .get('/api/chat/:id', chat.load.bind(chat))
     .post('/api/chat/:id', chat.load.bind(chat));
+
+router
+    .post('/api/export/:type', exporter.anyExport.bind(exporter));
 
 router
     .get('/go/:linkId/:stageId/:chatId/:botId', go.go);

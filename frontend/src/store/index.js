@@ -26,6 +26,7 @@ export default new Vuex.Store({
             {code: 'funnelsList', title: 'Воронки', icon: 'mdi-filter-variant'},
             {code: 'paymentsList', title: 'Платежи', icon: 'mdi-cash'},
             {code: 'usersList', title: 'Пользователи админки', icon: 'mdi-account'},
+            {code: 'export', title: 'Экспорт', icon: 'mdi-database-export'},
         ]
     },
     getters: {
