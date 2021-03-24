@@ -1,4 +1,5 @@
 import Crud from "./baseCrud";
+import axios from "axios";
 
 const API_LIST_URL = `/api/funnels/list`;
 const API_ADD_URL = `/api/funnels/add`;
@@ -16,4 +17,14 @@ export default new Crud({
 
     NAME_ITEMS,
     NAME_ITEM
+}, {
+    actions: {
+        async copyItem({dispatch, state}, item) {
+            let query = {};
+            query[NAME_ITEM] = item;
+
+            await axios.post(`/api/funnels/copy`, query);
+            return dispatch('loadItems', state.filter);
+        },
+    }
 });

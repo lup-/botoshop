@@ -13,6 +13,7 @@
                     :label="label"
                     hint="В формате 31.12.2020"
                     persistent-hint
+                    clearable
                     prepend-icon="mdi-calendar"
                     v-bind="attrs"
                     @blur="updateDateFromText"
@@ -31,7 +32,7 @@
     import moment from "moment";
 
     export default {
-        props: ['value', 'label'],
+        props: ['value', 'label', 'dayStart', 'dayEnd'],
         data() {
             return {
                 menuDate: false,
@@ -63,8 +64,16 @@
                 return `${day}.${month}.${year}`
             },
             commitChange() {
-                let value = moment(this.date, 'YYYY-MM-DD').unix();
-                this.$emit('input', value);
+                let value = moment(this.date, 'YYYY-MM-DD');
+                if (this.dayStart) {
+                    value = value.startOf('d');
+                }
+
+                if (this.dayEnd) {
+                    value = value.endOf('d');
+                }
+
+                this.$emit('input', value.unix());
             }
         }
     }

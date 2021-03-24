@@ -32,21 +32,24 @@ module.exports = {
 
     getQuery(filter) {
         let query = {};
+        let start = filter.start || false;
+        let end = filter.end || false;
+
         if (filter.funnels && filter.funnels.length > 0) {
             query.funnelId = {$in: filter.funnels};
         }
 
-        if (filter.start && filter.end) {
+        if (start && end) {
             query['$and'] = [
-                {date: {$gte: filter.start}},
-                {date: {$lte: filter.end}}
+                {date: {$gte: start}},
+                {date: {$lte: end}}
             ]
         }
-        else if (filter.start) {
-            query.date =  {$gte: filter.start}
+        else if (start) {
+            query.date =  {$gte: start}
         }
-        else if (filter.end) {
-            query.date =  {$lte: filter.end}
+        else if (end) {
+            query.date =  {$lte: end}
         }
 
         return query;
@@ -54,7 +57,7 @@ module.exports = {
     async getFunnelsWithStages(filter) {
         let query = {};
         if (filter.funnels && filter.funnels.length > 0) {
-            query.funnelId = {$in: filter.funnels};
+            query.id = {$in: filter.funnels};
         }
 
         let db = await getDb();
@@ -159,6 +162,10 @@ module.exports = {
         return stats;
     },
 
+    filterByConditionMaybeDay(list, condition, day = false, dayCondition = false) {
+        return list.filter(item => day && dayCondition ? condition(item) && dayCondition(item) : condition(item))[0] || false;
+    },
+
     async stagesExport(filter) {
         let query = this.getQuery(filter);
         let groupDays = filter.groupDays === true;
@@ -210,13 +217,7 @@ module.exports = {
 
                     for (const nextStage of nextStages) {
                         let nextStageStats = nextStage
-                            ? stats.find(stat => {
-                                let idsMatch = stat.funnelId === nextStage.funnelId && stat.stageId === nextStage.id
-
-                                return groupDays
-                                    ? idsMatch && stat.day === day
-                                    : idsMatch;
-                              })
+                            ? this.filterByConditionMaybeDay(stats, stat => stat.funnelId === nextStage.funnelId && stat.stageId === nextStage.id, day, stat => stat.day === day)
                             : false;
                         nextVisits += nextStageStats ? nextStageStats.visits || 0 : 0;
                         nextUsers += nextStageStats ? nextStageStats.users || 0 : 0;
@@ -226,12 +227,12 @@ module.exports = {
                     let linkClicks = 0;
                     let linkUsers = 0;
                     for (let linkButton of linkButtons) {
-                        let linkStat = linkStats.find(stat => stat.stageId === stage.id && stat.linkId === linkButton.linkId);
+                        let linkStat = this.filterByConditionMaybeDay(linkStats, stat => stat.stageId === stage.id && stat.linkId === linkButton.linkId, day, stat => stat.day === day);
                         linkClicks += linkStat ? linkStat.clicks || 0 : 0;
                         linkUsers += linkStat ? linkStat.users || 0 : 0;
                     }
 
-                    let stageStats = stats.find(stat => stat.funnelId === stage.funnelId && stat.stageId === stage.id);
+                    let stageStats = this.filterByConditionMaybeDay(stats, stat => stat.funnelId === stage.funnelId && stat.stageId === stage.id, day, stat => stat.day === day);
 
                     let visits = stageStats ? stageStats.visits || 0 : 0;
                     let users = stageStats ? stageStats.users || 0 : 0;
@@ -323,8 +324,8 @@ module.exports = {
                     let buttons = stage.buttons || [];
                     for (let button of buttons) {
                         let buttonStat = button.type === 'stage'
-                            ? btnStats.find(stat => stat.srcStageId === stage.id && stat.dstStageId === button.target)
-                            : linkStats.find(stat => stat.stageId === stage.id && stat.linkId === button.linkId);
+                            ? this.filterByConditionMaybeDay(btnStats, stat => stat.srcStageId === stage.id && stat.dstStageId === button.target, day, stat => stat.day === day)
+                            : this.filterByConditionMaybeDay(linkStats, stat => stat.stageId === stage.id && stat.linkId === button.linkId, day, stat => stat.day === day);
 
                         let clicks = buttonStat ? buttonStat.clicks || 0 : 0;
                         let users = buttonStat ? buttonStat.users || 0 : 0;
@@ -373,8 +374,7 @@ module.exports = {
         }
 
         let db = await getDb();
-        let stats = await db.collection('funnelActivity').aggregate([
-            { $match: {type: 'link'} },
+        let stats = await db.collection('refs').aggregate([
             { $match: query },
             { $addFields: {
                     day: {$dateToString: {date: {$toDate:{$multiply: ['$date', 1000]}}, format: '%Y-%m-%d'}}
@@ -403,7 +403,7 @@ module.exports = {
 
         let exportStats = stats.map(stat => {
             let bot = bots.find(bot => bot.botId === stat.botId);
-            let funnel = funnels.find(funnel => funnel.id === stats.funnelId);
+            let funnel = funnels.find(funnel => funnel.id === stat.funnelId);
 
             return {
                 day: stat.day,

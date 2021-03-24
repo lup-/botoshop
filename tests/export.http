@@ -46,3 +46,20 @@ Content-Type: application/json
 }
 
 ###
+
+POST http://localhost:8196/api/export/stages
+Content-Type: application/json
+
+{
+  "stages": {
+    "funnels": [
+      "w614z07a0",
+      "Ty0do6YMn"
+    ],
+    "start": 1615842000,
+    "end": 1616101199,
+    "groupDays": true
+  }
+}
+
+###

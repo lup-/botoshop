@@ -1,6 +1,7 @@
 import axios from "axios";
+import merge from "lodash.merge";
 
-export default function (params) {
+export default function (params, extra = {}) {
     const {
         API_LIST_URL,
         API_ADD_URL,
@@ -11,7 +12,7 @@ export default function (params) {
         NAME_ITEM
     } = params;
 
-    return  {
+    return merge({
         namespaced: true,
         state: {
             list: [],
@@ -100,5 +101,5 @@ export default function (params) {
                 state.edit = item;
             },
         }
-    }
+    }, extra);
 }

@@ -26,12 +26,14 @@
                                     <date-editor
                                             v-model="stages.start"
                                             label="Выгрузить активность с"
+                                            :day-start="true"
                                     ></date-editor>
                                 </v-col>
                                 <v-col cols="6">
                                     <date-editor
                                             v-model="stages.end"
                                             label="по"
+                                            :day-end="true"
                                     ></date-editor>
                                 </v-col>
                             </v-row>
@@ -72,12 +74,14 @@
                                     <date-editor
                                             v-model="buttons.start"
                                             label="Выгрузить активность с"
+                                            :day-start="true"
                                     ></date-editor>
                                 </v-col>
                                 <v-col cols="6">
                                     <date-editor
                                             v-model="buttons.end"
                                             label="по"
+                                            :day-end="true"
                                     ></date-editor>
                                 </v-col>
                             </v-row>
@@ -104,7 +108,7 @@
                                             label="Боты для экспорта"
                                             :items="allBots"
                                             item-text="username"
-                                            item-value="id"
+                                            item-value="botId"
                                             v-model="refs.bots"
                                             multiple
                                             chips
@@ -131,12 +135,14 @@
                                     <date-editor
                                             v-model="refs.start"
                                             label="Выгрузить активность с"
+                                            :day-start="true"
                                     ></date-editor>
                                 </v-col>
                                 <v-col cols="12" md="6">
                                     <date-editor
                                             v-model="refs.end"
                                             label="по"
+                                            :day-end="true"
                                     ></date-editor>
                                 </v-col>
                             </v-row>
@@ -153,6 +159,7 @@
 <script>
     import DateEditor from "@/components/DateEditor";
     import axios from "axios";
+    import moment from "moment";
 
     export default {
         components: {DateEditor},
@@ -199,7 +206,7 @@
                 }
 
                 let funnelIds = this.$store.state.bot.list.reduce((funnelIds, bot) => {
-                    if (botIds.indexOf(bot.id) === -1) {
+                    if (botIds.indexOf(bot.botId) === -1) {
                         return funnelIds;
                     }
 
@@ -226,8 +233,39 @@
             async fetchExport(what) {
                 let request = {};
                 request[what] = this[what];
+
+                let fileNameParts = [what];
+                if (request[what].bots && request[what].bots.length > 0) {
+                    let botUserNames = this.allBots
+                        .filter(bot => request[what].bots.indexOf(bot.botId) !== -1)
+                        .map(bot => bot.username);
+
+                    fileNameParts = fileNameParts.concat(botUserNames);
+                }
+
+                if (request[what].funnels && request[what].funnels.length > 0) {
+                    let funnelNames = this.allFunnels
+                        .filter(funnel => request[what].funnels.indexOf(funnel.id) !== -1)
+                        .map(funnel => funnel.title)
+                        .map(title => title.replace(/ +/g, '-'));
+
+                    fileNameParts = fileNameParts.concat(funnelNames);
+                }
+
+                if (request[what].start) {
+                    let start = moment.unix(request[what].start).format('DDMMYYYY');
+                    fileNameParts.push(start);
+                }
+
+                if (request[what].end) {
+                    let end = moment.unix(request[what].end).format('DDMMYYYY');
+                    fileNameParts.push(end);
+                }
+
+                let fileName = fileNameParts.join('_') + '.csv';
+
                 let {data: blob} = await axios.post(`/api/export/${what}`, request, {responseType: "blob"});
-                this.download(blob, `${what}.csv`);
+                this.download(blob, fileName);
             }
         }
     }

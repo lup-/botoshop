@@ -48,6 +48,7 @@ router
 router
     .post('/api/funnels/list', funnels.list.bind(funnels))
     .post('/api/funnels/add', funnels.add.bind(funnels))
+    .post('/api/funnels/copy', funnels.copy.bind(funnels))
     .post('/api/funnels/update', funnels.update.bind(funnels))
     .post('/api/funnels/delete', funnels.delete.bind(funnels));
 

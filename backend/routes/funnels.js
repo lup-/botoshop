@@ -63,6 +63,68 @@ module.exports = {
         response[ITEM_NAME] = item;
         ctx.body = response;
     },
+    async copy(ctx) {
+        let oldFunnelId = ctx.request.body[ITEM_NAME].id;
+        let db = await getDb(DB_NAME);
+        let oldFunnel = await db.collection('funnels').findOne({id: oldFunnelId});
+        let oldStages = await db.collection('stages').find({funnelId: oldFunnelId, deleted: {$in: [null, false]}}).toArray();
+
+        let newFunnelId = shortid.generate();
+        let newFunnel = Object.assign(oldFunnel, {
+            id: newFunnelId,
+            created: moment().unix(),
+            updated: moment().unix(),
+        });
+
+        delete newFunnel._id;
+        delete newFunnel.finished;
+        newFunnel.title = newFunnel.title + ' (копия)';
+
+        let newStages = oldStages.map(oldStage => {
+            let newStage = Object.assign(oldStage, {
+                id: shortid(),
+                copyOf: oldStage.id,
+                funnelId: newFunnelId,
+                created: moment().unix(),
+                updated: moment().unix(),
+            });
+
+            delete newStage._id;
+            delete newStage.shows;
+
+            return newStage;
+        });
+
+        newStages = newStages.map(newStage => {
+            if (newStage.nextStage) {
+                let updatedStage = newStages.find(stage => stage.copyOf === newStage.nextStage);
+                newStage.nextStage = updatedStage ? updatedStage.id || false : false;
+            }
+
+            if (newStage.buttons && newStage.buttons.length > 0) {
+                newStage.buttons = newStage.buttons.map(button => {
+                    if (button.type !== 'stage') {
+                        return button;
+                    }
+
+                    let updatedStage = newStages.find(stage => stage.copyOf === button.target);
+                    button.target = updatedStage ? updatedStage.id || false : false;
+
+                    return button;
+                });
+            }
+
+            return newStage;
+        });
+
+        let result = await db.collection('funnels').insertOne(newFunnel);
+        await db.collection('stages').insertMany(newStages);
+
+        let item = result.ops[0];
+        let response = {};
+        response[ITEM_NAME] = item;
+        ctx.body = response;
+    },
     async update(ctx) {
         let db = await getDb(DB_NAME);
         let itemData = ctx.request.body[ITEM_NAME];
