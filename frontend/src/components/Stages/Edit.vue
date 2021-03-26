@@ -366,6 +366,10 @@
                 return this.$router.push({name: 'funnelBuilderEdit', params: {id: this.funnelId}});
             },
             addButton() {
+                if (!this.buttons) {
+                    this.buttons = [];
+                }
+
                 this.buttons.push({text: '', type: 'stage', target: ''});
             },
             removeButton(index = 0) {
