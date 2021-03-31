@@ -51,8 +51,13 @@ module.exports = class BotManager {
         let botIndex = this.allBots.findIndex(bot => bot.id === botToStop.id);
         if (botIndex !== -1) {
             let app = this.runningBots.splice(botIndex, 1);
-            app.stop();
+            return app.stop();
         }
+    }
+
+    async restartBot(botToRestart) {
+        await this.stopBot(botToRestart);
+        this.createBot(botToRestart);
     }
 
     async loadBots() {
@@ -68,12 +73,23 @@ module.exports = class BotManager {
 
     async loadFunnels(bot) {
         let filter = {
-            'id': {$in: bot.funnels},
+            'id': bot.id,
             'deleted': {$in: [null, false]}
         };
 
         let db = await getDb();
-        this.botFunnels = await db.collection('funnels').find(filter).toArray();
+        let botData = await db.collection('bots').aggregate([
+            { $match: filter },
+            { $lookup: {
+                    from: 'funnels',
+                    localField: 'funnels',
+                    foreignField: 'id',
+                    as: 'funnelList'
+                }
+            }
+        ]).toArray();
+
+        this.botFunnels = botData && botData[0] ? botData[0].funnelList : [];
         return this.botFunnels;
     }
 

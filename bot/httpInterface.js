@@ -22,6 +22,7 @@ module.exports = class HttpInterface {
         const router = new Router();
         router.get('/sync', catchErrors(this, this.sync));
         router.get('/status', catchErrors(this, this.status));
+        router.get('/restart', catchErrors(this, this.restartBot));
 
         this.httpIO = new Koa();
         this.httpIO.use(bodyParser()).use(router.routes()).use(router.allowedMethods());
@@ -47,6 +48,12 @@ module.exports = class HttpInterface {
         }
 
         ctx.body = {bots, db: dbInfo};
+    }
+
+    async restartBot(ctx) {
+        let bot = ctx.request.body.bot;
+        await this.botManager.restartBot(bot)
+        ctx.body = {bot};
     }
 
     launch() {

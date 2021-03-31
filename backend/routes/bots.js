@@ -110,6 +110,15 @@ module.exports = {
 
         let response = {};
         response[ITEM_NAME] = item;
+
+        try {
+            let {data} = await axios.post(BOT_HTTP_INTERFACE_URL + '/restart', {bot: itemData});
+            response.reload = data;
+        }
+        catch (e) {
+            response.reload = {error: e};
+        }
+
         ctx.body = response;
     },
     async delete(ctx) {
