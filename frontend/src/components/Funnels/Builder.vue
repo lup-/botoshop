@@ -439,7 +439,7 @@
             updateEdges() {
                 let edges = [];
                 let stageEdges = this.stages.reduce( (edges, stage) => {
-                    if (stage.needsAnswer) {
+                    if (stage.needsAnswer || stage.isPoll) {
                         edges.push({
                             'id': stage.id + ':' + stage.nextStage + ':answer',
                             'from': stage.id,

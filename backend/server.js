@@ -9,6 +9,7 @@ const users = require('./routes/users');
 const payments = require('./routes/payments');
 const profiles = require('./routes/profiles');
 const funnels = require('./routes/funnels');
+const polls = require('./routes/polls');
 const stages = require('./routes/stages');
 const files = require('./routes/files');
 const bots = require('./routes/bots');
@@ -51,6 +52,13 @@ router
     .post('/api/funnels/copy', funnels.copy.bind(funnels))
     .post('/api/funnels/update', funnels.update.bind(funnels))
     .post('/api/funnels/delete', funnels.delete.bind(funnels));
+
+router
+    .post('/api/polls/list', polls.list.bind(polls))
+    .post('/api/polls/stats', polls.stats.bind(polls))
+    .post('/api/polls/add', polls.add.bind(polls))
+    .post('/api/polls/update', polls.update.bind(polls))
+    .post('/api/polls/delete', polls.delete.bind(polls));
 
 router
     .post('/api/funnel/:id/stages/list', stages.list.bind(stages))

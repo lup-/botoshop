@@ -14,6 +14,9 @@ import BotsList from '../components/Bots/List';
 import FunnelsEdit from '../components/Funnels/Edit';
 import FunnelBuilder from '../components/Funnels/Builder';
 import FunnelsList from '../components/Funnels/List';
+import PollsEdit from '../components/Polls/Edit';
+import PollsList from '../components/Polls/List';
+import PollStat from '../components/Polls/Stat';
 import StagesEdit from '../components/Stages/Edit';
 import StagesList from '../components/Stages/List';
 import DirectChat from "@/components/Chats/DirectChat";
@@ -42,6 +45,10 @@ const routes = [
     { name: 'funnelEdit', path: '/funnels/:id', component: FunnelsEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'funnelBuilderNew', path: '/funnels/builder/new', component: FunnelBuilder, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'funnelBuilderEdit', path: '/funnels/builder/:id', component: FunnelBuilder, meta: {requiresAuth: true, group: 'funnelsList'} },
+    { name: 'pollsList', path: '/polls/', component: PollsList, meta: {requiresAuth: true, group: 'pollsList'} },
+    { name: 'pollNew', path: '/polls/new', component: PollsEdit, meta: {requiresAuth: true, group: 'pollsList'} },
+    { name: 'pollEdit', path: '/polls/:id', component: PollsEdit, meta: {requiresAuth: true, group: 'pollsList'} },
+    { name: 'pollStat', path: '/polls/stat/:id', component: PollStat, meta: {requiresAuth: true, group: 'pollsList'} },
     { name: 'stagesList', path: '/funnels/:funnelId/stages/', component: StagesList, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stageNew', path: '/funnels/:funnelId/stages/new', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },
     { name: 'stageEdit', path: '/funnels/:funnelId/stages/:id', component: StagesEdit, meta: {requiresAuth: true, group: 'funnelsList'} },

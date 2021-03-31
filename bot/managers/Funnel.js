@@ -6,11 +6,13 @@ module.exports = class Funnel {
         this.funnelId = funnelId;
         this.funnel = null;
         this.stages = [];
+        this.polls = [];
     }
 
     async init() {
         await this.loadFunnel();
         await this.loadStages();
+        await this.loadPolls();
     }
 
     getId() {
@@ -27,8 +29,24 @@ module.exports = class Funnel {
         this.stages = await db.collection('stages').find({funnelId: this.funnelId}).toArray();
     }
 
+    async loadPolls() {
+        let pollIds = this.stages.filter(stage => stage.isPoll).map(stage => stage.pollId);
+        if (pollIds.length > 0) {
+            let db = await getDb();
+            this.polls = await db.collection('polls').find({id: {'$in': pollIds}}).toArray();
+        }
+    }
+
     getStageById(stageId) {
         return this.stages.find(stage => stage.id === stageId);
+    }
+
+    getPollById(pollId) {
+        return this.polls.find(poll => poll.id === pollId);
+    }
+
+    getPollByStage(stage) {
+        return stage.isPoll && stage.pollId ? this.getPollById(stage.pollId) : false;
     }
 
     getStartingStage() {
@@ -118,6 +136,22 @@ module.exports = class Funnel {
             userId,
             chatId,
             answer,
+            stageId: stage.id,
+            funnelId: stage.funnelId,
+        });
+    }
+
+    async logPoll(ctx, stage, poll, answers, totalScore) {
+        let db = await getDb();
+        let {userId, chatId} = ctx.session;
+
+        return db.collection('pollAnswers').insertOne({
+            date: moment().unix(),
+            userId,
+            chatId,
+            answers,
+            totalScore,
+            pollId: poll.id,
             stageId: stage.id,
             funnelId: stage.funnelId,
         });

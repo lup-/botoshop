@@ -7,6 +7,7 @@ import user from "./modules/user";
 import payment from "./modules/payment";
 import profile from "./modules/profile";
 import funnel from "./modules/funnel";
+import poll from "./modules/poll";
 import stage from "./modules/stage";
 import bot from "./modules/bot";
 import chat from "./modules/chat";
@@ -24,6 +25,7 @@ export default new Vuex.Store({
             {code: 'mailingsList', title: 'Рассылки', icon: 'mdi-email'},
             {code: 'botsList', title: 'Боты', icon: 'mdi-robot'},
             {code: 'funnelsList', title: 'Воронки', icon: 'mdi-filter-variant'},
+            {code: 'pollsList', title: 'Опросы', icon: 'mdi-poll'},
             {code: 'paymentsList', title: 'Платежи', icon: 'mdi-cash'},
             {code: 'usersList', title: 'Пользователи админки', icon: 'mdi-account'},
             {code: 'export', title: 'Экспорт', icon: 'mdi-database-export'},
@@ -59,6 +61,7 @@ export default new Vuex.Store({
         payment,
         profile,
         funnel,
+        poll,
         stage,
         bot,
         chat

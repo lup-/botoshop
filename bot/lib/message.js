@@ -22,6 +22,7 @@ function getButtons(message, extra = {}, stageId = null, mailingId = null, chatI
     let buttons = message.buttons.map((button, index) => {
         let hasNoType = !Boolean(button.type);
         let isLink = hasNoType || button.type === 'link';
+        let isPoll = button.type && button.type === 'poll';
         let buttonId = stageId !== null
             ? `stage:${stageId}:${button.target}:${index}`
             : `mailing:${mailingId}:${index}`;
@@ -29,6 +30,9 @@ function getButtons(message, extra = {}, stageId = null, mailingId = null, chatI
         if (isLink) {
             let url = makeButtonUrl(button, stageId, chatId, botId);
             return {text: button.text, url};
+        }
+        else if (isPoll) {
+            return {text: button.text, code: `poll/${button.answerIndex}/${button.nextStepIndex}`};
         }
         else {
             return {text: button.text, code: `goto/${buttonId}/${button.target}`};

@@ -44,12 +44,23 @@ export default {
 
                 switch (fileType) {
                     case 'image':
+                        if (!this.photos) {
+                            this.photos = [];
+                        }
                         this.photos.push(fileData);
                         break;
                     case 'video':
+                        if (!this.videos) {
+                            this.videos = [];
+                        }
+
                         this.videos.push(fileData);
                         break;
                     default:
+                        if (!this.other) {
+                            this.other = [];
+                        }
+
                         this.other.push(fileData);
                         break;
                 }

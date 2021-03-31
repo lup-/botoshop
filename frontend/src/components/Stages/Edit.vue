@@ -17,7 +17,7 @@
                             >
                                 <v-tab key="main">Основное</v-tab>
                                 <v-tab key="answers">
-                                    <v-badge v-if="item.needsAnswer" content="вкл" color="green">Сбор данных</v-badge>
+                                    <v-badge v-if="needsAnswer || isPoll" content="вкл" color="green">Сбор данных</v-badge>
                                     <div v-else>Сбор данных</div>
                                 </v-tab>
                                 <v-tab key="timer">
@@ -45,7 +45,7 @@
                                         </v-col>
                                     </v-row>
 
-                                    <v-row class="mt-4">
+                                    <v-row class="mt-4" v-if="!isPoll">
                                         <v-col cols="12">
                                             <vue-trix
                                                     v-model="item.text"
@@ -55,7 +55,7 @@
                                         </v-col>
                                     </v-row>
 
-                                    <v-row class="my-4" v-if="photos && photos.length > 0">
+                                    <v-row class="my-4" v-if="photos && photos.length > 0 && !isPoll">
                                         <v-col cols="12">Фото:</v-col>
                                         <v-col cols="12">
                                             <v-chip v-for="(photo, index) in photos" :key="photo.name"
@@ -72,7 +72,7 @@
                                         </v-col>
                                     </v-row>
 
-                                    <v-row class="my-4" v-if="videos && videos.length > 0">
+                                    <v-row class="my-4" v-if="videos && videos.length > 0 && !isPoll">
                                         <v-col cols="12">Видео:</v-col>
                                         <v-col cols="12">
                                             <v-chip v-for="(video, index) in videos" :key="video.name"
@@ -89,7 +89,7 @@
                                         </v-col>
                                     </v-row>
 
-                                    <v-row class="my-4" v-if="other && other.length > 0">
+                                    <v-row class="my-4" v-if="other && other.length > 0 && !isPoll">
                                         <v-col cols="12">Прочие файлы:</v-col>
                                         <v-col cols="12">
                                             <v-chip v-for="(file, index) in other" :key="file.name"
@@ -103,7 +103,7 @@
                                         </v-col>
                                     </v-row>
 
-                                    <div v-if="!item.needsAnswer">
+                                    <div v-if="!needsAnswer && !isPoll">
                                         <v-row>
                                             <v-col cols="12" md="4">
                                                 <v-btn @click="addButton">Добавить кнопку к сообщению</v-btn>
@@ -147,10 +147,21 @@
                                 <v-card-text>
                                     <v-row>
                                         <v-col cols="12">
-                                            <v-switch v-model="item.needsAnswer" label="Собирать ответы" hint="Пользователь должен написать ответ для перехода к следующему этапу" persistent-hint></v-switch>
-                                            <v-switch v-model="item.answerIsPhone" v-if="item.needsAnswer" label="Номер телефона" hint="Ответ запишется как номер телефона пользователя" persistent-hint></v-switch>
-                                            <v-switch v-model="item.answerIsEmail" v-if="item.needsAnswer" label="Электропочта" hint="Ответ запишется как электронная почта пользователя" persistent-hint></v-switch>
-                                            <v-select v-if="item.needsAnswer"
+                                            <v-switch v-model="needsAnswer" label="Собирать ответы" hint="Пользователь должен написать ответ для перехода к следующему этапу" persistent-hint></v-switch>
+                                            <v-switch v-model="item.answerIsPhone" v-if="needsAnswer" label="Номер телефона" hint="Ответ запишется как номер телефона пользователя" persistent-hint></v-switch>
+                                            <v-switch v-model="item.answerIsEmail" v-if="needsAnswer" label="Электропочта" hint="Ответ запишется как электронная почта пользователя" persistent-hint></v-switch>
+
+                                            <v-switch v-model="isPoll" label="Провести опрос" hint="Для перехода к следующему этапу пользователь должен пройти опрос" persistent-hint></v-switch>
+                                            <v-select v-if="isPoll"
+                                                    class="mt-4"
+                                                    label="Опрос"
+                                                    :items="polls"
+                                                    item-text="title"
+                                                    item-value="id"
+                                                    v-model="item.pollId"
+                                            ></v-select>
+
+                                            <v-select v-if="needsAnswer || isPoll"
                                                     class="mt-4"
                                                     label="После ответа перейти к этому этапу"
                                                     :items="nextStages"
@@ -204,13 +215,13 @@
                                     </v-col>
                                     <v-col cols="12">
                                         <v-select v-if="item.hasTimer"
-                                                label="После ответа перейти к этому этапу"
+                                                label="При срабатывании таймера перейти к этому этапу"
                                                 :items="nextStages"
                                                 item-text="title"
                                                 item-value="id"
                                                 v-model="item.nextStage"
-                                                :hint="item.needsAnswer ? 'Тот же, что при сборе данных' : ''"
-                                                :persistent-hint="item.needsAnswer"
+                                                :hint="needsAnswer ? 'Тот же, что при сборе данных' : ''"
+                                                :persistent-hint="needsAnswer"
                                         ></v-select>
                                     </v-col>
                                 </v-row>
@@ -240,6 +251,8 @@
             return {
                 item: {},
                 isItemLoading: false,
+                needsAnswer: false,
+                isPoll: false,
                 buttons: [],
                 tab: 'main',
                 buttonTypes: [
@@ -279,10 +292,24 @@
                     await this.$store.dispatch(this.ACTION_LOAD, {funnelId: this.funnelId});
                 }
 
+                if (this.polls.length === 0) {
+                    await this.$store.dispatch('poll/loadItems');
+                }
+
                 this.$store.dispatch(this.ACTION_SET_EDIT_ITEM, this.itemId);
             }
         },
         watch: {
+            needsAnswer() {
+                if (this.needsAnswer && this.isPoll) {
+                    this.isPoll = false;
+                }
+            },
+            isPoll() {
+                if (this.isPoll && this.needsAnswer) {
+                    this.needsAnswer = false;
+                }
+            },
             itemId() {
                 this.$store.dispatch(this.ACTION_SET_EDIT_ITEM, this.itemId);
             },
@@ -297,10 +324,12 @@
             storeItem() {
                 if (this.storeItem) {
                     this.item = this.storeItem;
-                    this.buttons = this.item.buttons;
-                    this.photos = this.item.photos;
-                    this.videos = this.item.videos;
-                    this.other = this.item.other;
+                    this.buttons = this.item.buttons || [];
+                    this.photos = this.item.photos || [];
+                    this.videos = this.item.videos || [];
+                    this.other = this.item.other || [];
+                    this.needsAnswer = this.item.needsAnswer;
+                    this.isPoll = this.item.isPoll;
 
                     if (this.item.timerType === 'exact') {
                         if (this.item.timerValue) {
@@ -332,6 +361,8 @@
                 saveItem.photos = this.photos;
                 saveItem.videos = this.videos;
                 saveItem.other = this.other;
+                saveItem.needsAnswer = this.needsAnswer;
+                saveItem.isPoll = this.isPoll;
 
                 if (this.item.hasTimer) {
                     switch (this.item.timerType) {
@@ -398,6 +429,9 @@
             },
             allItems() {
                 return this.$store.state[this.STORE_MODULE].list;
+            },
+            polls() {
+                return this.$store.state.poll.list;
             },
             timerType() {
                 return this.item.timerType;

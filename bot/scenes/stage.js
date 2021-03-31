@@ -21,10 +21,6 @@ async function replyWithSceneMessage(ctx, stage) {
     return results;
 }
 
-async function scheduleAutoSend(chatId, botId, telegram, stage) {
-
-}
-
 module.exports = function () {
     const scene = new BaseScene('stage');
 
@@ -35,11 +31,12 @@ module.exports = function () {
             ctx.scene.state.stage = stage;
         }
 
-        let messages = await replyWithSceneMessage(ctx, stage);
-
-        if (stage && stage.hasTimer === true && stage.timerType === 'seconds') {
-            await scheduleAutoSend(ctx.chat.id, ctx.botInfo.id, ctx.telegram, stage);
+        if (stage.isPoll) {
+            let poll = ctx.funnel.getPollByStage(stage);
+            return ctx.scene.enter('poll', {stage, poll});
         }
+
+        let messages = await replyWithSceneMessage(ctx, stage);
 
         return messages;
     });
