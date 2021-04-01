@@ -369,8 +369,8 @@ module.exports = {
             delete query.funnelId;
         }
 
-        if (filter.botId) {
-            query.botId = {$in: filter.botId};
+        if (filter.bots) {
+            query.botId = {$in: filter.bots};
         }
 
         let db = await getDb();
