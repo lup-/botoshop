@@ -1,35 +1,40 @@
 <template>
-    <v-container class="fill-height align-start content-container" fluid>
+    <v-container class="fill-height align-start content-container" fluid app style="position: relative">
+        <v-navigation-drawer absolute :permanent="isWideDisplay" v-model="showSidebar">
+            <v-expansion-panels accordion class="chat-list">
+                <v-expansion-panel v-for="data in grouppedChats" :key="data.funnelId">
+                    <v-expansion-panel-header>
+                        {{data.funnel ? data.funnel.title || 'Без названия' : 'Без воронки'}}
+                    </v-expansion-panel-header>
+                    <v-expansion-panel-content>
+                        <v-list>
+                            <v-list-item-group color="primary">
+                                <v-list-item v-for="chat in data.chats" :key="chat.id" @click="selectChat(chat)">
+                                    <v-list-item-content>
+                                        <v-list-item-title v-if="chat.unreadMessages && chat.unreadMessages.length > 0">
+                                            <v-badge color="error" :content="chat.unreadMessages.length">{{getChatTitle(chat.user)}}</v-badge>
+                                        </v-list-item-title>
+                                        <v-list-item-title v-else>{{getChatTitle(chat.user)}}</v-list-item-title>
+                                    </v-list-item-content>
+                                    <v-list-item-action>
+                                        <v-btn icon @click.stop="markRead(chat)"><v-icon>mdi-eye-off</v-icon></v-btn>
+                                    </v-list-item-action>
+                                </v-list-item>
+                            </v-list-item-group>
+                        </v-list>
+                    </v-expansion-panel-content>
+                </v-expansion-panel>
+            </v-expansion-panels>
+        </v-navigation-drawer>
+
         <v-btn fab bottom right fixed large color="primary" @click="showChatSearch = true">
             <v-icon>mdi-plus</v-icon>
         </v-btn>
-        <v-tabs v-model="selectedFunnelIndex">
-            <v-tab v-for="funnel in activeFunnels" :key="funnel.id">{{funnel.title}}</v-tab>
-        </v-tabs>
+
         <v-row class="fill-height">
             <v-col cols="12" md="3">
-                <v-list>
-                    <v-subheader>Список чатов</v-subheader>
-                    <v-list-item-group
-                        v-model="selectedChatIndex"
-                        color="primary"
-                        @change="loadChatHistory"
-                    >
-                        <v-list-item v-for="chat in unreadChats" :key="chat.id">
-                            <v-list-item-content>
-                                <v-list-item-title v-if="chat.unreadMessages && chat.unreadMessages.length > 0">
-                                    <v-badge color="error" :content="chat.unreadMessages.length">{{getChatTitle(chat.user)}}</v-badge>
-                                </v-list-item-title>
-                                <v-list-item-title v-else>{{getChatTitle(chat.user)}}</v-list-item-title>
-                            </v-list-item-content>
-                            <v-list-item-action>
-                                <v-btn icon @click="markRead(chat)"><v-icon>mdi-eye-off</v-icon></v-btn>
-                            </v-list-item-action>
-                        </v-list-item>
-                    </v-list-item-group>
-                </v-list>
             </v-col>
-            <v-col cols="12" md="9" class="d-flex flex-column" v-if="selectedChat">
+            <v-col cols="12" md="9" class="d-flex flex-column message-list" v-if="selectedChat">
                 <v-card v-for="message in chatMessages" :key="message.messageId"
                         class="mb-2"
                         width="70%"
@@ -46,30 +51,25 @@
 
                     <v-card-text v-html="message.message.text" class="pt-0"></v-card-text>
                 </v-card>
+                <div class="scroll-holder" v-if="selectedChat"></div>
+
+                <v-sheet class="message-block white" v-if="selectedChat">
+                    <v-row>
+                        <v-col cols="12">
+                            <v-textarea v-model="reply[selectedChat.id+':'+selectedChat.botId]" label="Сообщение"></v-textarea>
+                        </v-col>
+                    </v-row>
+                    <v-row>
+                        <v-col cols="12">
+                            <v-btn @click="sendReply">Отправить<v-icon>mdi-telegram</v-icon></v-btn>
+                        </v-col>
+                    </v-row>
+                </v-sheet>
             </v-col>
             <v-col cols="12" md="9" class="d-flex flex-column pt-4 text-center" v-else>
                 Чат не выбран
             </v-col>
         </v-row>
-        <v-footer fixed v-if="selectedChat" class="white">
-            <v-col cols="12" md="3"></v-col>
-            <v-col cols="12" md="9">
-                <v-container class="p-0" fluid>
-                    <v-sheet class="p-2">
-                        <v-row>
-                            <v-col cols="12">
-                                <v-textarea v-model="reply[selectedChat.id+':'+selectedChat.botId]" label="Сообщение"></v-textarea>
-                            </v-col>
-                        </v-row>
-                        <v-row>
-                            <v-col cols="12">
-                                <v-btn @click="sendReply">Отправить<v-icon>mdi-telegram</v-icon></v-btn>
-                            </v-col>
-                        </v-row>
-                    </v-sheet>
-                </v-container>
-            </v-col>
-        </v-footer>
         <chat-search-dialog
             v-model="newChat"
             :show-input="showChatSearch"
@@ -97,8 +97,7 @@
         },
         data() {
             return {
-                selectedChatIndex: null,
-                selectedFunnelIndex: null,
+                selectedChat: null,
                 reply: {},
                 pollIntervalId: false,
                 pollMs: 10000,
@@ -145,6 +144,10 @@
 
                 return this.$store.dispatch('loadChatHistory', this.selectedChat);
             },
+            selectChat(chat) {
+                this.selectedChat = chat;
+                this.loadChatHistory();
+            },
             getChatTitle(user) {
                 if (!user) {
                     return '@';
@@ -181,8 +184,30 @@
             unreadChats() {
                 return this.$store.state.chat.unread;
             },
-            selectedChat() {
-                return this.selectedChatIndex !== null ? this.unreadChats[this.selectedChatIndex] : null;
+            grouppedChats() {
+                if (!this.unreadChats) {
+                    return [];
+                }
+
+                let chatsHash = {};
+                for (let chat of this.unreadChats) {
+                    for (let funnelId of chat.funnelIds) {
+                        if (!chatsHash[funnelId]) {
+                            chatsHash[funnelId] = [];
+                        }
+
+                        chatsHash[funnelId].push(chat);
+                    }
+                }
+
+                let grouppedChats = [];
+                for (let funnelId in chatsHash) {
+                    let funnel = this.$store.getters['funnel/byId'](funnelId);
+                    let chats = chatsHash[funnelId];
+                    grouppedChats.push({funnelId, funnel, chats});
+                }
+
+                return grouppedChats;
             },
             chatMessages() {
                 let history = this.$store.state.chat.chatHistory;
@@ -216,21 +241,47 @@
                 }
 
                 return this.activeFunnels[this.selectedFunnelIndex];
-            }
+            },
+            isWideDisplay() {
+                let alwaysShowBreakpoints = ['md', 'lg', 'xl'];
+                let breakpoint = this.$vuetify.breakpoint.name;
+                return alwaysShowBreakpoints.indexOf(breakpoint) !== -1;
+            },
+            showSidebar() {
+                if (this.isWideDisplay) {
+                    return true;
+                }
 
+                return this.$store.state.showChatsList;
+            }
         }
     }
 </script>
 
 <style scoped>
-    .footer {
+    .message-list {
+    }
+    .message-block {
         position: fixed;
-        height: 300px;
         bottom: 0;
-        padding: 0!important;
+        width: 75%;
+        padding: 0 74px 24px 0;
+        height: 250px;
     }
 
-    .content-container {
-        padding-bottom: 300px;
+    .scroll-holder {
+        width: 100%;
+        height: 250px;
     }
+
+    @media (max-width: 960px) {
+        .message-block {
+            width: 100%;
+            padding: 0 80px 24px 0;
+        }
+    }
+</style>
+
+<style>
+    .chat-list .v-expansion-panel-content__wrap {padding: 0 0 16px;}
 </style>

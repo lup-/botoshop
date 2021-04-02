@@ -49,7 +49,19 @@ module.exports = {
                     as: "unreadMessages"
                 }
             },
+            { $lookup: {
+                    from: "messages",
+                    let: { chatId: '$id', },
+                    pipeline: [
+                        { $match: {$expr: {$eq: ["$chatId", "$$chatId"]}} },
+                        { $group: {"_id": "_", funnelIds: {$addToSet: "$funnelId"}} }
+                    ],
+                    as: "funnelIds"
+                }
+            },
+            { $set: {funnelIds: {$arrayElemAt: ["$funnelIds", 0]}} },
             { $set: {
+                    funnelIds: "$funnelIds.funnelIds",
                     unreadMessages: {
                         $filter: {input: "$unreadMessages", as: "message", cond: {$gte: ["$$message.received", "$lastRead"]}}
                     }

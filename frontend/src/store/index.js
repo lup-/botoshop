@@ -29,7 +29,8 @@ export default new Vuex.Store({
             {code: 'paymentsList', title: 'Платежи', icon: 'mdi-cash'},
             {code: 'usersList', title: 'Пользователи админки', icon: 'mdi-account'},
             {code: 'export', title: 'Экспорт', icon: 'mdi-database-export'},
-        ]
+        ],
+        showChatsList: true,
     },
     getters: {
         allowedRoutes(state, getters) {
@@ -52,6 +53,9 @@ export default new Vuex.Store({
         setInfoMessage(state, text) {
             state.appMessage = {text, color: 'info'};
         },
+        setShowChatsList(state, newShowState) {
+            state.showChatsList = newShowState;
+        }
     },
     actions: {},
     modules: {
