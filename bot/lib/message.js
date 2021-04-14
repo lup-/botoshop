@@ -103,7 +103,8 @@ async function saveFileIds(messages, stage) {
 }
 
 async function sendMessage(telegram, chatId, message, stage = null, mailing = null, botId = null) {
-    let caption = escapeHTML(message.text);
+    let caption = escapeHTML(message.text, true);
+    let isStageMessage = stage !== null;
     let hasVideo = message.videos && message.videos.length > 0;
     let hasPhoto = message.photos && message.photos.length > 0;
     let hasCaption = caption.length > 0;
@@ -182,7 +183,9 @@ async function sendMessage(telegram, chatId, message, stage = null, mailing = nu
         }
 
         sentMessages.push(singleMediaMessage);
-        await saveFileIds(sentMessages, stage);
+        if (isStageMessage) {
+            await saveFileIds(sentMessages, stage);
+        }
         return sentMessages;
     }
 
@@ -196,7 +199,9 @@ async function sendMessage(telegram, chatId, message, stage = null, mailing = nu
             let lastMessage = await telegram.sendMessage(chatId, caption, buttons);
             sentMessages = sentMessages.concat(mediaMessages);
             sentMessages.push(lastMessage);
-            await saveFileIds(sentMessages, stage);
+            if (isStageMessage) {
+                await saveFileIds(sentMessages, stage);
+            }
             return sentMessages;
         }
         else {
@@ -206,7 +211,10 @@ async function sendMessage(telegram, chatId, message, stage = null, mailing = nu
             }
             let mediaMessages = await telegram.sendMediaGroup(chatId, medias, extra);
             sentMessages = sentMessages.concat(mediaMessages);
-            await saveFileIds(sentMessages, stage);
+            if (isStageMessage) {
+                await saveFileIds(sentMessages, stage);
+            }
+
             return sentMessages;
         }
     }

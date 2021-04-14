@@ -151,6 +151,7 @@ module.exports = class Mailer {
         return db.collection('mailings').find({
             startAt: {'$lte': now},
             status: {'$in': [MAILING_STATUS_NEW, MAILING_STATUS_PROCESSING]},
+            deleted: {'$in': [null, false]}
         }).toArray();
     }
 

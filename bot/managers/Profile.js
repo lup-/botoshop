@@ -22,10 +22,14 @@ module.exports = class Profile {
     getDefault() {
         const fromInfo = this.ctx.update.callback_query
             ? this.ctx.update.callback_query.from
-            : this.ctx.update.message.from;
+            : (this.ctx.update.message ? this.ctx.update.message.from : false);
         const chatInfo = this.ctx.update.callback_query
             ? this.ctx.update.callback_query.message.chat
-            : this.ctx.update.message.chat;
+            : (this.ctx.update.message ? this.ctx.update.message.chat : false);
+
+        if (!fromInfo) {
+            return false;
+        }
 
         const botId = this.ctx.botInfo.id;
 
@@ -51,8 +55,11 @@ module.exports = class Profile {
             await this.load();
             if (!this.profile) {
                 const db = await getDb();
-                await db.collection('profiles').insertOne(this.getDefault());
-                await this.load();
+                let defaultProfile = this.getDefault();
+                if (defaultProfile) {
+                    await db.collection('profiles').insertOne();
+                    await this.load();
+                }
             }
         }
 
