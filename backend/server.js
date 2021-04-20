@@ -44,7 +44,8 @@ router
     .post('/api/bots/list', bots.list.bind(bots))
     .post('/api/bots/add', bots.add.bind(bots))
     .post('/api/bots/update', bots.update.bind(bots))
-    .post('/api/bots/delete', bots.delete.bind(bots));
+    .post('/api/bots/delete', bots.delete.bind(bots))
+    .post('/api/bots/restart', bots.restart.bind(bots));
 
 router
     .post('/api/funnels/list', funnels.list.bind(funnels))

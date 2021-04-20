@@ -66,14 +66,14 @@ export default function (params, extra = {}) {
                     let response = await axios.post(API_UPDATE_URL, query);
                     let isSuccess = response && response.data && response.data[NAME_ITEM] && response.data[NAME_ITEM].id;
                     if (isSuccess) {
-                        commit('setSuccessMessage', 'Данные сохранены!');
+                        commit('setSuccessMessage', 'Данные сохранены!', { root: true });
                     }
                     else {
-                        commit('setErrorMessage', 'Ошибка сохранения данных!');
+                        commit('setErrorMessage', 'Ошибка сохранения данных!', { root: true });
                     }
                 }
                 catch (e) {
-                    commit('setErrorMessage', 'Ошибка сохранения данных!')
+                    commit('setErrorMessage', 'Ошибка сохранения данных!', { root: true })
                 }
 
                 return dispatch('loadItems', state.currentFilter);

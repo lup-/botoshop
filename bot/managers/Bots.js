@@ -50,8 +50,9 @@ module.exports = class BotManager {
     stopBot(botToStop) {
         let botIndex = this.allBots.findIndex(bot => bot.id === botToStop.id);
         if (botIndex !== -1) {
-            let app = this.runningBots.splice(botIndex, 1);
-            return app.stop();
+            let runningBot = this.runningBots.splice(botIndex, 1)[0];
+            console.log(botIndex, this.runningBots, runningBot);
+            return runningBot ? runningBot.stop() : false;
         }
     }
 
@@ -96,6 +97,7 @@ module.exports = class BotManager {
     async launchBots() {
         await this.loadBots();
         this.runningBots = this.allBots.map(this.createBot.bind(this));
+        return this.runningBotsInfo();
     }
 
     async launchNewBots() {
@@ -114,7 +116,7 @@ module.exports = class BotManager {
 
     async stopOldBots() {
         await this.loadBots();
-        let runningBotUsernames = this.runningBots.map(telegraf => telegraf.botInfo.username);
+        let runningBotUsernames = this.runningBots.map(telegraf => telegraf.botInfo ? telegraf.botInfo.username : false);
         let allUsernames = this.allBots.map(bot => bot.username);
         let missingNames = runningBotUsernames.filter(name => allUsernames.indexOf(name) === -1);
         if (missingNames.length > 0) {
@@ -139,5 +141,15 @@ module.exports = class BotManager {
 
     async runningBotsInfo() {
         return this.runningBots.map(telegraf => telegraf.botInfo);
+    }
+
+    async stopAllBots() {
+        let promises = this.runningBots.map(telegraf => this.stopBot({id: telegraf.botDbId}));
+        return await Promise.all(promises);
+    }
+
+    async restartAll() {
+        await this.stopAllBots();
+        return this.launchBots();
     }
 }

@@ -2,12 +2,22 @@ const {getDb} = require('../modules/Database');
 const shortid = require('shortid');
 const moment = require('moment');
 
+const botInterface = require('../modules/BotHttp');
+
 const DB_NAME = 'funnel_bot';
 const COLLECTION_NAME = 'funnels';
 const ITEMS_NAME = 'funnels';
 const ITEM_NAME = 'funnel';
 
 module.exports = {
+    async reloadFunnelBots(funnel) {
+        const db = await getDb(DB_NAME);
+        let bots = await db.collection('bots').find({funnels: funnel.id, deleted: {$in: [null, false]}}).toArray();
+        let promises = bots.map(bot => botInterface.restartBot(bot));
+        let responses = await Promise.all(promises);
+        return responses;
+    },
+
     async list(ctx) {
         let filter = ctx.request.body && ctx.request.body.filter
             ? ctx.request.body.filter || {}
@@ -147,6 +157,8 @@ module.exports = {
 
         let response = {};
         response[ITEM_NAME] = item;
+        response.reload = await this.reloadFunnelBots(item);
+
         ctx.body = response;
     },
     async delete(ctx) {
@@ -159,6 +171,8 @@ module.exports = {
 
         let response = {};
         response[ITEM_NAME] = item;
+        response.reload = await this.reloadFunnelBots(item);
+
         ctx.body = response;
     },
 }

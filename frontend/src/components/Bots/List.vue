@@ -26,6 +26,7 @@
                     <template v-slot:item.actions="{ item }">
                         <v-btn icon small @click="gotoEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
                         <v-btn icon small @click="deleteItem(item)"><v-icon>mdi-delete</v-icon></v-btn>
+                        <v-btn icon small @click="restartBot(item)"><v-icon>mdi-restart-alert</v-icon></v-btn>
                     </template>
                 </v-data-table>
             </v-col>
@@ -62,7 +63,7 @@
                 return funnelIds
                     ? funnelIds.map(funnelId => {
                         return this.$store.getters["funnel/byId"](funnelId);
-                    })
+                    }).filter(funnel => Boolean(funnel))
                     : [];
             },
             async loadItems() {
@@ -70,6 +71,9 @@
                 await this.$store.dispatch('funnel/loadItems');
                 await this.$store.dispatch(this.ACTION_LOAD);
                 this.isLoading = false;
+            },
+            async restartBot(bot) {
+                await this.$store.dispatch('bot/restartBot', bot);
             }
         }
     }

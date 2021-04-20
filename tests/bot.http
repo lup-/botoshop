@@ -1,0 +1,33 @@
+GET http://localhost:8896/status
+Accept: application/json
+
+###
+GET http://localhost:8896/sync
+Accept: application/json
+
+###
+GET http://localhost:8896/restartAll
+Accept: application/json
+
+###
+POST http://localhost:8896/restart
+Content-Type: application/json
+
+{
+  "bot": {
+    "_id": "603dfe852ecd2900127f5d04",
+    "funnels": [
+      "-NkzpfCPi"
+    ],
+    "token": "1192872838:AAH-MYX80AOMGY-Bkv_M0N8aePOvYJoIXX4",
+    "id": "cTp1ma6zY",
+    "username": "wise_hobot",
+    "created": 1614675589,
+    "updated": 1617212958,
+    "botId": 1192872838
+  }
+}
+
+
+###
+

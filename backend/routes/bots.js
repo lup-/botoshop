@@ -2,13 +2,13 @@ const {getDb} = require('../modules/Database');
 const {Telegraf} = require('telegraf');
 const shortid = require('shortid');
 const moment = require('moment');
-const axios = require("axios");
+const botInterface = require('../modules/BotHttp');
 
 const DB_NAME = 'funnel_bot';
 const COLLECTION_NAME = 'bots';
 const ITEMS_NAME = 'bots';
 const ITEM_NAME = 'bot';
-const BOT_HTTP_INTERFACE_URL = process.env.BOT_HTTP_INTERFACE_URL || 'http://bot:3000';
+
 
 module.exports = {
     async getBotInfo(token) {
@@ -63,14 +63,7 @@ module.exports = {
 
         let response = {};
         response[ITEM_NAME] = item;
-
-        try {
-            let {data} = await axios.get(BOT_HTTP_INTERFACE_URL + '/sync');
-            response.reload = data;
-        }
-        catch (e) {
-            response.reload = {error: e};
-        }
+        response.reload = await botInterface.syncRunningBots();
 
         ctx.body = response;
     },
@@ -110,14 +103,7 @@ module.exports = {
 
         let response = {};
         response[ITEM_NAME] = item;
-
-        try {
-            let {data} = await axios.post(BOT_HTTP_INTERFACE_URL + '/restart', {bot: itemData});
-            response.reload = data;
-        }
-        catch (e) {
-            response.reload = {error: e};
-        }
+        response.reload = await botInterface.restartBot(itemData);
 
         ctx.body = response;
     },
@@ -131,6 +117,16 @@ module.exports = {
 
         let response = {};
         response[ITEM_NAME] = item;
+        response.reload = await botInterface.syncRunningBots();
+
         ctx.body = response;
     },
+    async restart(ctx) {
+        let bot = ctx.request.body.bot;
+        if (!bot) {
+            ctx.body.reload = false;
+        }
+
+        ctx.body = await botInterface.restartBot(bot);
+    }
 }
