@@ -12,6 +12,7 @@ module.exports = function (bot, botManager) {
     return async (ctx, next) => {
         let funnels = await botManager.loadFunnels(bot);
         let funnelId = ctx.session.funnelId || false;
+        funnelId = ensureFunnelInBot(funnelId, funnels);
 
         if (!funnelId) {
             funnelId = ctx.session && ctx.session.ref && ctx.session.ref.ref;
@@ -26,7 +27,9 @@ module.exports = function (bot, botManager) {
 
         if (!funnelId) {
             let funnel = funnels[0];
-            funnelId = funnel.id;
+            if (funnel) {
+                funnelId = funnel.id;
+            }
         }
 
         let funnel = new Funnel(funnelId);

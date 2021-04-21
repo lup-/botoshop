@@ -18,6 +18,9 @@
                         :sort-desc="[true]"
                         locale="ru"
                 >
+                    <template v-slot:item.username="{ item }">
+                        @{{item.username}} <v-btn text small :href="`https://t.me/${item.username}`" target="_blank"><v-icon>mdi-open-in-new</v-icon></v-btn>
+                    </template>
                     <template v-slot:item.funnels="{ item }">
                         <v-chip v-for="funnel in fullFunnels(item.funnels)" :key="funnel.id" class="mr-2 mb-2" x-small>
                             {{funnel.title}}

@@ -31,14 +31,16 @@ module.exports = function () {
             ctx.scene.state.stage = stage;
         }
 
-        if (stage.isPoll) {
-            let poll = ctx.funnel.getPollByStage(stage);
-            return ctx.scene.enter('poll', {stage, poll});
+        if (stage) {
+            if (stage.isPoll) {
+                let poll = ctx.funnel.getPollByStage(stage);
+                return ctx.scene.enter('poll', {stage, poll});
+            }
+
+            let messages = await replyWithSceneMessage(ctx, stage);
+
+            return messages;
         }
-
-        let messages = await replyWithSceneMessage(ctx, stage);
-
-        return messages;
     });
 
     scene.start(ctx => {

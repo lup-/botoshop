@@ -90,7 +90,9 @@ module.exports = class BotManager {
             }
         ]).toArray();
 
-        this.botFunnels = botData && botData[0] ? botData[0].funnelList : [];
+        let botFunnels = botData && botData[0] ? botData[0].funnelList : [];
+        this.botFunnels = botFunnels.filter(funnel => !Boolean(funnel.deleted));
+        
         return this.botFunnels;
     }
 
