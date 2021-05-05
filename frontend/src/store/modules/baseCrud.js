@@ -27,12 +27,13 @@ export default function (params, extra = {}) {
             }
         },
         actions: {
-            async loadItems({commit}, filter = {}) {
+            async loadItems({commit, rootState}, filter = {}) {
                 if (!API_LIST_URL) {
                     return;
                 }
 
-                let response = await axios.post(API_LIST_URL, {filter});
+                let shop = rootState.shop.current;
+                let response = await axios.post(API_LIST_URL, {filter, shop});
                 await commit('setFilter', filter);
                 return commit('setItems', response.data[NAME_ITEMS]);
             },
@@ -42,26 +43,30 @@ export default function (params, extra = {}) {
                     commit('setEditItem', item);
                 }
             },
-            async newItem({dispatch, state}, item) {
+            async newItem({dispatch, state, rootState}, item) {
                 if (!API_ADD_URL) {
                     return;
                 }
 
+                let shop = rootState.shop.current;
                 let query = {};
                 query[NAME_ITEM] = item;
+                query.shop = shop;
 
                 let result = await axios.post(API_ADD_URL, query);
                 dispatch('setEditItem', result.data[NAME_ITEM]);
                 return dispatch('loadItems', state.filter);
             },
-            async saveItem({dispatch, commit, state}, item) {
+            async saveItem({dispatch, commit, state, rootState}, item) {
                 if (!API_UPDATE_URL) {
                     return;
                 }
 
                 try {
+                    let shop = rootState.shop.current;
                     let query = {};
                     query[NAME_ITEM] = item;
+                    query.shop = shop;
 
                     let response = await axios.post(API_UPDATE_URL, query);
                     let isSuccess = response && response.data && response.data[NAME_ITEM] && response.data[NAME_ITEM].id;
@@ -78,13 +83,15 @@ export default function (params, extra = {}) {
 
                 return dispatch('loadItems', state.currentFilter);
             },
-            async deleteItem({dispatch, state}, item) {
+            async deleteItem({dispatch, state, rootState}, item) {
                 if (!API_DELETE_URL) {
                     return;
                 }
 
+                let shop = rootState.shop.current;
                 let query = {};
                 query[NAME_ITEM] = item;
+                query.shop = shop;
 
                 await axios.post(API_DELETE_URL, query);
                 return dispatch('loadItems', state.filter);

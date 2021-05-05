@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { Telegraf, Scenes, session } = require('telegraf');
+const { menu, escapeHTML } = require('../lib/helpers');
 const { Stage } = Scenes;
 
 const {
@@ -11,14 +12,14 @@ const {
     saveActivityMiddleware,
     checkSubscriptionMiddleware,
     safeReplyMiddleware,
-    catchErrors,
     blockNonPrivate,
-    initFunnel,
+    initShop,
     toggleBlockedMiddleware
 } = require('./middlewares');
 
 const store = new Map();
 const {clone} = require('./helpers');
+const {addMessage, cleanMessages} = require('./cleanup');
 
 const SCENE_BASE_DIR = `${__dirname}/../scenes`;
 
@@ -65,9 +66,9 @@ class Injector {
     addSafeReply(blockedHandler = null, errorsHandler = null) {
         let safeReply = new safeReplyMiddleware();
 
-        errorsHandler = errorsHandler ? errorsHandler : catchErrors(blockedHandler);
-
-        safeReply.setDefaultFallback(errorsHandler);
+        if (errorsHandler) {
+            safeReply.setDefaultFallback(errorsHandler);
+        }
 
         if (blockedHandler) {
             safeReply.setBlockedHandler(blockedHandler);
@@ -113,8 +114,33 @@ class Injector {
         return this;
     }
 
-    addFunnels(bot, botManager) {
-        this.app.use(initFunnel(bot, botManager));
+    addShop(shop, botManager) {
+        this.app.use(initShop(shop, botManager));
+        return this;
+    }
+
+    addDeleteReply() {
+        this.app.use(async (ctx, next) => {
+            ctx.replyWithDisposable = async function () {
+                let args = Array.from(arguments);
+                let replyFnName = args.shift();
+                let reply = this[replyFnName];
+
+                let botId = ctx.botInfo.id;
+                let chatId = ctx.chat.id;
+
+                let message = await reply.apply(ctx, args);
+                addMessage(botId, chatId, message.message_id);
+            }
+
+            let botId = ctx.botInfo.id;
+            let chatId = ctx.chat.id;
+
+            await cleanMessages(botId, chatId, ctx.telegram);
+
+            return next();
+        });
+
         return this;
     }
 
@@ -159,6 +185,10 @@ class Injector {
     }
 
     addDisclaimer(text, afterAccept) {
+        if (!text) {
+            return this;
+        }
+
         this.app.start(async ctx => {
             let messageShown = ctx && ctx.session && ctx.session.introShown;
             if (messageShown) {
@@ -167,7 +197,9 @@ class Injector {
 
             try {
                 ctx.session.introShown = true;
-                return ctx.reply(text, menu([{code: '_accept', text: 'Понятно'}]));
+                return ctx.replyWithDisposable
+                    ? ctx.replyWithDisposable('reply', escapeHTML(text), menu([{code: '_accept', text: 'Понятно'}]))
+                    : ctx.reply(escapeHTML(text), menu([{code: '_accept', text: 'Понятно'}]));
             }
             catch (e) {
             }

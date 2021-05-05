@@ -2,7 +2,6 @@ const {getDb} = require('../modules/Database');
 const shortid = require('shortid');
 const moment = require('moment');
 
-const DB_NAME = 'funnel_bot';
 const COLLECTION_NAME = 'mailings';
 const ITEMS_NAME = 'mailings';
 const ITEM_NAME = 'mailing';
@@ -12,14 +11,18 @@ module.exports = {
         let filter = ctx.request.body && ctx.request.body.filter
             ? ctx.request.body.filter || {}
             : {};
+        let shopId = ctx.request.body && ctx.request.body.shop && ctx.request.body.shop.id
+            ? ctx.request.body.shop.id|| null
+            : null;
 
         let defaultFilter = {
+            shopId,
             'deleted': {$in: [null, false]}
         };
 
         filter = Object.assign(defaultFilter, filter);
 
-        let db = await getDb(DB_NAME);
+        let db = await getDb();
         let items = await db.collection(COLLECTION_NAME).find(filter).toArray();
         let response = {};
         response[ITEMS_NAME] = items;
@@ -27,7 +30,7 @@ module.exports = {
         ctx.body = response;
     },
     async add(ctx) {
-        const db = await getDb(DB_NAME);
+        const db = await getDb();
 
         let itemData = ctx.request.body[ITEM_NAME];
         if (itemData._id) {
@@ -35,6 +38,11 @@ module.exports = {
             response[ITEM_NAME] = false;
             ctx.body = response;
             return;
+        }
+
+        if (itemData.shop) {
+            itemData.shopId = itemData.shop.id || null;
+            delete itemData.shop;
         }
 
         itemData = Object.assign(itemData, {
@@ -51,9 +59,10 @@ module.exports = {
         ctx.body = response;
     },
     async update(ctx) {
-        let db = await getDb(DB_NAME);
+        let db = await getDb();
         let itemData = ctx.request.body[ITEM_NAME];
         let id = itemData.id;
+        let shopId = itemData.shop ? itemData.shop.id || null : null;
 
         if (!id) {
             let response = {};
@@ -70,21 +79,22 @@ module.exports = {
             itemData.status = 'new';
         }
 
-        await db.collection(COLLECTION_NAME).findOneAndReplace({id}, itemData);
-        await db.collection(COLLECTION_NAME).updateOne({id}, {$set: {updated: moment().unix()}}, {returnOriginal: false});
-        let item = await db.collection(COLLECTION_NAME).findOne({id});
+        await db.collection(COLLECTION_NAME).findOneAndReplace({id, shopId}, itemData);
+        await db.collection(COLLECTION_NAME).updateOne({id, shopId}, {$set: {updated: moment().unix()}}, {returnOriginal: false});
+        let item = await db.collection(COLLECTION_NAME).findOne({id, shopId});
 
         let response = {};
         response[ITEM_NAME] = item;
         ctx.body = response;
     },
     async delete(ctx) {
-        const db = await getDb(DB_NAME);
+        const db = await getDb();
         let itemData = ctx.request.body[ITEM_NAME];
         let id = itemData.id;
+        let shopId = itemData.shop ? itemData.shop.id || null : null;
 
-        await db.collection(COLLECTION_NAME).findOneAndUpdate({id}, {$set: {deleted: moment().unix()}}, {returnOriginal: false});
-        let item = await db.collection(COLLECTION_NAME).findOne({id});
+        await db.collection(COLLECTION_NAME).findOneAndUpdate({id, shopId}, {$set: {deleted: moment().unix()}}, {returnOriginal: false});
+        let item = await db.collection(COLLECTION_NAME).findOne({id, shopId});
 
         let response = {};
         response[ITEM_NAME] = item;

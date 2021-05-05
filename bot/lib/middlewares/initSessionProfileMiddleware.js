@@ -11,15 +11,12 @@ module.exports = function () {
             return next();
         }
 
-        const fromInfo = ctx.update.callback_query
-            ? ctx.update.callback_query.from
-            : ctx.update.message.from;
-        const chatInfo = ctx.update.callback_query
-            ? ctx.update.callback_query.message.chat
-            : ctx.update.message.chat;
+        const fromInfo = ctx.from;
+        const chatInfo = ctx.chat;
 
         const userId = fromInfo.id;
         const botId = ctx.botInfo.id;
+        const shopId = ctx.shop ? ctx.shop.id : ctx.session.shopId;
 
         if (!ctx.session.profile) {
             ctx.session.userId = userId;
@@ -27,17 +24,13 @@ module.exports = function () {
             ctx.session.botId = botId;
         }
 
-        let profile = new Profile(userId, ctx, ctx.session.profile);
+        let profile = new Profile(userId, botId, shopId, ctx);
         await profile.init();
-
-        if (profile.botId !== botId) {
-            await profile.setFields({botId});
-        }
 
         ctx.profile = profile;
 
         if (!ctx.session.profile) {
-            ctx.session.profile = profile.get();
+            profile.syncSession();
         }
 
         return next();

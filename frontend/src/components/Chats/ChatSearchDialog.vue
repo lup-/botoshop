@@ -127,14 +127,7 @@
 
                 this.isLoading = true;
                 let text = this.search;
-                let filter = {};
-                if (this.funnelIds && this.funnelIds.length > 0) {
-                    filter['funnelId'] = {$in: this.funnelIds};
-                }
-
-                if (this.stageIds && this.stageIds.length > 0) {
-                    filter['stageId'] = {$in: this.stageIds};
-                }
+                let filter = {storeId: this.store.id};
 
                 if (text) {
                     let query = `.*?${text}.*`;
@@ -146,17 +139,14 @@
                     ]
                 }
 
-                let response = await axios.post(`/api/profile/list`, {filter});
+                let response = await axios.post(`/api/user/list`, {filter});
                 this.profiles = response.data.profiles;
                 this.isLoading = false;
             }
         },
         computed: {
-            allFunnels() {
-                return this.$store.state.funnel.list;
-            },
-            allStages() {
-                return this.$store.getters['stage/byFunnelIds'](this.funnelIds);
+            store() {
+                return this.$store.state.store.current;
             },
             chats() {
                 return this.profiles.map(profile => {

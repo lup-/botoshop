@@ -6,8 +6,9 @@ export default {
         currentFilter: false,
     },
     actions: {
-        async loadPayments({commit}, filter = {}) {
-            let response = await axios.post(`/api/payment/list`, {filter});
+        async loadPayments({commit, rootState}, filter = {}) {
+            let shop = rootState.shop.current;
+            let response = await axios.post(`/api/payment/list`, {filter, shop});
             await commit('setFilter', filter);
             return commit('setPayments', response.data.payments);
         },

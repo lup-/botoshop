@@ -29,7 +29,8 @@ module.exports = function () {
             return this;
         },
 
-        async safeReply(replyFn, ctxFallbacks, ctx, next) {
+        async safeReply(replyFn, ctxFallbacks, next) {
+            let ctx = this;
             let firstError = null;
             let secondError = null;
             let result = null;
@@ -76,7 +77,7 @@ module.exports = function () {
 
         getMiddleware() {
             return (ctx, next) => {
-                ctx.safeReply = this.safeReply.bind(this);
+                ctx.safeReply = this.safeReply.bind(ctx);
                 return next();
             }
         }

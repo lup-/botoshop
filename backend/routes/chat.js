@@ -28,7 +28,12 @@ module.exports = {
         let filter = ctx.request.body && ctx.request.body.filter
             ? ctx.request.body.filter || {}
             : {};
+        let botId = ctx.request.body && ctx.request.body.botId
+            ? ctx.request.body.botId || null
+            : null;
+
         let defaultFilter = {
+            botId,
             deleted: {$in: [null, false]},
         };
 
@@ -39,9 +44,13 @@ module.exports = {
         ctx.body = {chats};
     },
     async listUnread(ctx) {
+        let botId = ctx.request.body && ctx.request.body.botId
+            ? ctx.request.body.botId || null
+            : null;
+
         const db = await getDb();
         let chats = await db.collection('chats').aggregate([
-            { $match: {unread: true, deleted: {$in: [null, false]}} },
+            { $match: {unread: true, botId, deleted: {$in: [null, false]}} },
             { $lookup: {
                     from: "messages",
                     localField: "id",
@@ -81,7 +90,7 @@ module.exports = {
         }
 
         const db = await getDb();
-        await db.collection('chats').updateOne({botId}, {$set: {deleted: moment().unix()}}, {returnOriginal: false});
+        await db.collection('chats').updateOne({id, botId}, {$set: {deleted: moment().unix()}}, {returnOriginal: false});
         let chat = await db.collection('chats').findOne({id, botId});
 
         ctx.body = {chat};
@@ -97,7 +106,7 @@ module.exports = {
 
         const db = await getDb();
         await db.collection('chats').updateOne({id, botId}, {$set: {unread: false, lastRead: moment().unix()}}, {returnOriginal: false});
-        let chat = await db.collection('chats').findOne({id});
+        let chat = await db.collection('chats').findOne({id, botId});
 
         ctx.body = {chat};
     },
@@ -117,7 +126,6 @@ module.exports = {
     async reply(ctx) {
         const chatId = ctx.request.body.id;
         const botId = ctx.request.body.botId;
-        const funnelId = ctx.request.body.funnelId;
         const text =  ctx.request.body.text;
         const newChat = ctx.request.body.newChat || false;
 
@@ -146,7 +154,7 @@ module.exports = {
         try {
             message = await telegram.sendMessage(chatId, text);
             let messageId = message.message_id;
-            let saveMessage = {chatId, botId, funnelId, replied: moment().unix()}
+            let saveMessage = {chatId, botId, replied: moment().unix()}
 
             await db.collection('messages').updateOne({botId, messageId}, {
                 $set: {message},
@@ -156,7 +164,7 @@ module.exports = {
             await db.collection('chats').updateOne({id: chatId, botId}, {$set: {lastRead: moment().unix()}});
         }
         catch (e) {
-            sent = false;
+            message = false;
             error = e;
         }
 

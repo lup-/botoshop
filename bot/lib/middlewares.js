@@ -7,7 +7,7 @@ const checkSubscriptionMiddleware = require('./middlewares/checkSubscriptionMidd
 const safeReplyMiddleware = require('./middlewares/safeReplyMiddleware');
 const blockNonPrivate = require('./middlewares/blockNonPrivate');
 const catchErrors = require('./middlewares/catchErrors');
-const initFunnel = require('./middlewares/initFunnel');
+const initShop = require('./middlewares/initShop');
 const toggleBlockedMiddleware = require('./middlewares/toggleBlockedMiddleware');
 
 module.exports = {
@@ -20,6 +20,6 @@ module.exports = {
     safeReplyMiddleware,
     blockNonPrivate,
     catchErrors,
-    initFunnel,
+    initShop,
     toggleBlockedMiddleware
 }

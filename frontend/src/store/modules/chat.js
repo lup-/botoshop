@@ -38,26 +38,51 @@ export default {
 
             commit('addUnreadChat', newChat);
         },
-        async loadChat({commit}, {chatId, botId}) {
+        async loadChat({commit, getters}, {chatId}) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
             let response = await axios.post(`/api/chat/${botId}/${chatId}`, {});
 
             return commit('setChat', response.data.chat);
         },
-        async loadChats({commit}, filter) {
+        async loadChats({commit, getters}, filter) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
             commit('setChatFilter', filter);
-            let response = await axios.post(`/api/chat/list`, {filter});
+            let response = await axios.post(`/api/chat/list`, {filter, botId});
             return commit('setChats', response.data.chats);
         },
-        async loadUnreadChats({commit}) {
-            let response = await axios.post(`/api/chat/unread`, {});
+        async loadUnreadChats({commit, getters}) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
+            let response = await axios.post(`/api/chat/unread`, {botId});
             return commit('setUnreadChats', response.data.chats);
         },
-        async loadChatHistory({commit}, {id, botId}) {
+        async loadChatHistory({commit, getters}, {id}) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
             let response = await axios.post(`/api/chat/history`, {id, botId});
             return commit('setChatHistory', response.data.history);
         },
-        async loadAllChats({commit}) {
-            let response = await axios.post(`/api/chat/list`, {});
+        async loadAllChats({commit, getters}) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
+            let response = await axios.post(`/api/chat/list`, {botId});
             return commit('setAllChats', response.data.chats);
         },
         async reloadChats({dispatch, state}) {
@@ -79,17 +104,27 @@ export default {
 
             return dispatch('reloadChats');
         },
-        async reply({dispatch, state}, {id, botId, funnelId, text}) {
-            let data = {id, botId, funnelId, text};
+        async reply({dispatch, state, getters}, {id, text}) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
+            let data = {id, botId, text};
             let newChat = state.newChats.find(newChat => newChat.id === id && newChat.botId === botId);
             if (newChat) {
                 data['newChat'] = newChat;
             }
 
             await axios.post(`/api/chat/reply`, data);
-            return dispatch('loadChatHistory', {id, botId});
+            return dispatch('loadChatHistory', {id});
         },
-        async markRead({dispatch}, {chatId, botId}) {
+        async markRead({dispatch, getters}, {chatId}) {
+            let botId = getters.botId;
+            if (!botId) {
+                return;
+            }
+
             await axios.post(`/api/chat/read`, {chatId, botId});
             return dispatch('loadUnreadChats');
         }

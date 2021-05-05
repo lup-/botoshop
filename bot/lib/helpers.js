@@ -64,6 +64,12 @@ module.exports = {
 
         return keyboard;
     },
+    menuWithControls(buttons, buttonColumns, controls) {
+        let mainButtons = getMarkupButtons(buttons, buttonColumns);
+        let controlButtons = getMarkupButtons(controls, controls.length);
+        let allButtons = mainButtons.concat(controlButtons);
+        return Markup.inlineKeyboard(allButtons);
+    },
     escapeHTML(html, decode = false) {
         if (!html) {
             return '';

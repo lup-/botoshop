@@ -1,8 +1,17 @@
 const {getDb} = require('../modules/Database');
+const {getInfoByShop} = require('../modules/BotInfo');
 const moment = require('moment');
 
 module.exports = {
+    async getBotId(ctx) {
+        let shop = ctx.request.body && ctx.request.body.shop
+            ? ctx.request.body.shop || false
+            : false;
+        let botInfo = await getInfoByShop(shop);
+        return botInfo ? botInfo.id : null;
+    },
     async details(ctx) {
+        let botId = this.getBotId(ctx);
         let tz = ctx.request.body && ctx.request.body.tz
             ? ctx.request.body.tz || false
             : false;
@@ -51,12 +60,14 @@ module.exports = {
         let activity = db.collection('activity');
 
         let totalUsersResult = await users.aggregate([
+            {$match: {botId}},
             {$set: {targetDate: "$registered"}},
             {$project: projectQuery},
             {$group: groupQuery}
         ]).toArray();
 
         let usersResult = await users.aggregate([
+            {$match: {botId}},
             {$match: {$or: [
                 {blocked: {$in: [null, false]}},
                 {$and: [ {blocked: true}, {blockedSince: {$gt: range.end}} ]}
@@ -73,6 +84,7 @@ module.exports = {
         ]).toArray();
 
         let refsResult = await refs.aggregate([
+            {$match: botId},
             {$match: {$and: [{date: {$gte: range.start}}, {date: {$lt: range.end}}]}},
             {$set: {registered_date: {$toDate: {$multiply: ["$date", 1000]}}}},
             {$set: {
@@ -85,6 +97,7 @@ module.exports = {
         ]).toArray();
 
         let activeUsersResult = await activity.aggregate([
+            {$match: botId},
             {$match: {$and: [{date: {$gte: range.start}}, {date: {$lt: range.end}}]}},
             {$set: {date_date: {$toDate: {$multiply: ["$date", 1000]}}}},
             {$set: {

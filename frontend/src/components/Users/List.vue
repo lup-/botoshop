@@ -15,9 +15,11 @@
                         :loading="isLoading"
                         :items-per-page="50"
                 >
-                    <template v-slot:item.actions="{ item }">
-                        <v-btn icon small @click="gotoUserEdit(item.id)"><v-icon>mdi-pencil</v-icon></v-btn>
-                        <v-btn icon small @click="deleteUser(item)"><v-icon>mdi-delete</v-icon></v-btn>
+                    <template v-slot:item.blocked="{ item }">
+                        <v-simple-checkbox
+                                :value="item.blocked > 0"
+                                disabled
+                        ></v-simple-checkbox>
                     </template>
                 </v-data-table>
             </v-col>
@@ -34,7 +36,7 @@
                 headers: [
                     {text: 'ФИО', value: 'name'},
                     {text: 'Логин', value: 'login'},
-                    {text: 'Действия', value: 'actions', sortable: false},
+                    {text: 'Блокировка', value: 'blocked'},
                 ]
             }
         },
@@ -43,11 +45,11 @@
         },
         methods: {
             deleteUser(user) {
-                this.$store.dispatch('deleteUser', user);
+                this.$store.dispatch('user/deleteItem', user);
             },
             async loadUsers() {
                 this.isLoading = true;
-                await this.$store.dispatch('loadUsers', {});
+                await this.$store.dispatch('user/loadItems', {});
                 this.isLoading = false;
             },
             gotoUserEdit(id) {

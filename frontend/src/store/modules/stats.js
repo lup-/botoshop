@@ -138,7 +138,8 @@ export default {
         }
     },
     actions: {
-        async loadDetails({commit}, params) {
+        async loadDetails({commit, rootState}, params) {
+            params.shop = rootState.shop.current;
             params.tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             let response = await axios.post(`/api/stats/details`, params);
             return commit('setDetails', response.data);

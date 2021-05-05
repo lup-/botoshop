@@ -1,8 +1,6 @@
 const {getDb} = require('../lib/database');
 const setupBot = require('../lib/setup');
 
-const COLLECTION_NAME = 'bots';
-
 module.exports = class BotManager {
     constructor() {
         this.runningBots = [];
@@ -17,34 +15,32 @@ module.exports = class BotManager {
         return next();
     }
 
-    createBot(bot) {
-        let app = setupBot(bot.token)
+    createBot(shop) {
+        let settings = shop.settings || {};
+        if (!settings.botToken) {
+            return null;
+        }
+
+        let app = setupBot(settings.botToken)
             .addSession({})
+            .addDeleteReply()
             .addSafeReply(this.blockedHandler)
             .addIdsToSession()
             .addRefSave()
             .addUserSave()
+            .addShop(shop, this)
             .addProfile()
             .addSaveActivity()
-            .addFunnels(bot, this)
             .addHandleBlocks()
             .addScenes()
-            .addRoute('action', /goto\/(.*?)\/(.*)/, async ctx => {
-                let buttonId = ctx.match[1];
-                let nextStageId = ctx.match[2];
+            .addDisclaimer(settings.description, ctx => ctx.scene.enter('menu'))
+            .addDefaultRoute(ctx => ctx.scene.enter('discover'));
 
-                await ctx.funnel.logButton(buttonId, ctx, ctx.funnel.getId());
+        let bot = app.get();
+        bot.shop = shop;
+        bot.launch();
 
-                let nextStage = ctx.funnel.getStageById(nextStageId);
-                return ctx.scene.enter('stage', {stage: nextStage});
-            })
-            .addDefaultRoute(ctx => ctx.scene.enter('stage'))
-            .get();
-
-        app.botDbId = bot.id;
-        app.launch();
-
-        return app;
+        return bot;
     }
 
     stopBot(botToStop) {
@@ -63,37 +59,13 @@ module.exports = class BotManager {
 
     async loadBots() {
         let filter = {
-            'token': {$nin: [null, false]},
+            'settings.botToken': {$nin: [null, false]},
             'stopped': {$in: [null, false]},
             'deleted': {$in: [null, false]}
         };
 
         let db = await getDb();
-        this.allBots = await db.collection(COLLECTION_NAME).find(filter).toArray();
-    }
-
-    async loadFunnels(bot) {
-        let filter = {
-            'id': bot.id,
-            'deleted': {$in: [null, false]}
-        };
-
-        let db = await getDb();
-        let botData = await db.collection('bots').aggregate([
-            { $match: filter },
-            { $lookup: {
-                    from: 'funnels',
-                    localField: 'funnels',
-                    foreignField: 'id',
-                    as: 'funnelList'
-                }
-            }
-        ]).toArray();
-
-        let botFunnels = botData && botData[0] ? botData[0].funnelList : [];
-        this.botFunnels = botFunnels.filter(funnel => !Boolean(funnel.deleted));
-        
-        return this.botFunnels;
+        this.allBots = await db.collection('shops').find(filter).toArray();
     }
 
     async launchBots() {

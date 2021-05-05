@@ -23,6 +23,12 @@
                 <v-btn :disabled="!valid" color="success" @click="doLogin">
                     Войти
                 </v-btn>
+                <v-spacer></v-spacer>
+                <v-btn
+                        text
+                        x-small
+                        @click="$router.push({name: 'register'})"
+                >Регистрация</v-btn>
             </v-card-actions>
         </v-card>
     </v-container>
@@ -51,7 +57,7 @@
                 this.$refs.form.validate();
             },
             async doLogin() {
-                await this.$store.dispatch('loginUser', {login: this.login, password: this.password});
+                await this.$store.dispatch('loginOwner', {login: this.login, password: this.password});
                 if (this.$store.getters.isLoggedIn) {
                     let nextRoute = '/';
                     return this.$router.push({path: nextRoute});

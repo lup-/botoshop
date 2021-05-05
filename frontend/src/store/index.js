@@ -1,15 +1,14 @@
 import Vue from 'vue';
 import Vuex from 'vuex';
 
+import shop from "./modules/shop";
 import mailing from "./modules/mailing";
 import stats from "./modules/stats";
 import user from "./modules/user";
+import owner from "./modules/owner";
+import category from "./modules/category";
 import payment from "./modules/payment";
-import profile from "./modules/profile";
-import funnel from "./modules/funnel";
-import poll from "./modules/poll";
-import stage from "./modules/stage";
-import bot from "./modules/bot";
+import product from "./modules/product";
 import chat from "./modules/chat";
 
 Vue.use(Vuex);
@@ -23,18 +22,21 @@ export default new Vuex.Store({
             {code: 'statsDetails', title: 'Статистика', icon: 'mdi-database'},
             {code: 'chats', title: 'Переписка', icon: 'mdi-chat'},
             {code: 'mailingsList', title: 'Рассылки', icon: 'mdi-email'},
-            {code: 'botsList', title: 'Боты', icon: 'mdi-robot'},
-            {code: 'funnelsList', title: 'Воронки', icon: 'mdi-filter-variant'},
-            {code: 'pollsList', title: 'Опросы', icon: 'mdi-poll'},
+            {code: 'categoriesList', title: 'Категории', icon: 'mdi-tag-multiple'},
+            {code: 'productsList', title: 'Товары', icon: 'mdi-cart'},
             {code: 'paymentsList', title: 'Платежи', icon: 'mdi-cash'},
-            {code: 'usersList', title: 'Пользователи админки', icon: 'mdi-account'},
-            {code: 'export', title: 'Экспорт', icon: 'mdi-database-export'},
+            {code: 'usersList', title: 'Пользователи', icon: 'mdi-account'},
+            {code: 'settings', title: 'Настройки', icon: 'mdi-cog'},
         ],
         showChatsList: true,
     },
     getters: {
         allowedRoutes(state, getters) {
             return state.routes.filter(route => getters.userHasRights(route.code));
+        },
+        botId(state, getters, rootState) {
+            let bot = rootState.shop.bot || {};
+            return bot && bot.id ? bot.id : false;
         }
     },
     mutations: {
@@ -59,15 +61,14 @@ export default new Vuex.Store({
     },
     actions: {},
     modules: {
+        shop,
         mailing,
         stats,
         user,
         payment,
-        profile,
-        funnel,
-        poll,
-        stage,
-        bot,
-        chat
+        product,
+        chat,
+        owner,
+        category
     }
 })

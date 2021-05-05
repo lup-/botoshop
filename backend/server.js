@@ -6,16 +6,13 @@ const multer = require('@koa/multer');
 const stats = require('./routes/stats');
 const mailings = require('./routes/mailings');
 const users = require('./routes/users');
+const owners = require('./routes/owners');
 const payments = require('./routes/payments');
-const profiles = require('./routes/profiles');
-const funnels = require('./routes/funnels');
-const polls = require('./routes/polls');
-const stages = require('./routes/stages');
+const categories = require('./routes/categories');
+const products = require('./routes/products');
 const files = require('./routes/files');
-const bots = require('./routes/bots');
-const go = require('./routes/go');
 const chat = require('./routes/chat');
-const exporter = require('./routes/export');
+const shop = require('./routes/shop');
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -38,46 +35,35 @@ router
     .post('/api/payment/list', payments.list.bind(payments));
 
 router
-    .post('/api/profile/list', profiles.list.bind(profiles));
+    .post('/api/category/list', categories.list.bind(categories))
+    .post('/api/category/add', categories.add.bind(categories))
+    .post('/api/category/update', categories.update.bind(categories))
+    .post('/api/category/delete', categories.delete.bind(categories));
 
 router
-    .post('/api/bots/list', bots.list.bind(bots))
-    .post('/api/bots/add', bots.add.bind(bots))
-    .post('/api/bots/update', bots.update.bind(bots))
-    .post('/api/bots/delete', bots.delete.bind(bots))
-    .post('/api/bots/restart', bots.restart.bind(bots));
+    .post('/api/product/list', products.list.bind(products))
+    .post('/api/product/add', products.add.bind(products))
+    .post('/api/product/update', products.update.bind(products))
+    .post('/api/product/delete', products.delete.bind(products));
 
 router
-    .post('/api/funnels/list', funnels.list.bind(funnels))
-    .post('/api/funnels/add', funnels.add.bind(funnels))
-    .post('/api/funnels/copy', funnels.copy.bind(funnels))
-    .post('/api/funnels/update', funnels.update.bind(funnels))
-    .post('/api/funnels/delete', funnels.delete.bind(funnels));
-
-router
-    .post('/api/polls/list', polls.list.bind(polls))
-    .post('/api/polls/stats', polls.stats.bind(polls))
-    .post('/api/polls/add', polls.add.bind(polls))
-    .post('/api/polls/update', polls.update.bind(polls))
-    .post('/api/polls/delete', polls.delete.bind(polls));
-
-router
-    .post('/api/funnel/:id/stages/list', stages.list.bind(stages))
-    .post('/api/funnel/:id/stages/add', stages.add.bind(stages))
-    .post('/api/funnel/:id/stages/update', stages.update.bind(stages))
-    .post('/api/funnel/:id/stages/delete', stages.delete.bind(stages));
-
-router
-    .post('/api/user/list', users.list.bind(users))
-    .post('/api/user/add', users.add.bind(users))
-    .post('/api/user/update', users.update.bind(users))
-    .post('/api/user/delete', users.delete.bind(users))
-    .post('/api/user/check', users.check.bind(users))
-    .post('/api/user/login', users.login.bind(users));
+    .post('/api/owner/add', owners.add.bind(owners))
+    .post('/api/owner/update', owners.update.bind(owners))
+    .post('/api/owner/delete', owners.delete.bind(owners))
+    .post('/api/owner/check', owners.check.bind(owners))
+    .post('/api/owner/login', owners.login.bind(owners))
+    .post('/api/owner/register', owners.register.bind(owners));
 
 router
     .post('/api/file/link', upload.single('file'), files.getLink.bind(files))
     .post('/api/file/delete', files.deleteFile.bind(files));
+
+router
+    .post('/api/user/list', users.list.bind(users));
+
+router
+    .post('/api/shop/update', shop.update.bind(shop));
+
 
 router
     .post('/api/chat/list', chat.list.bind(chat))
@@ -88,12 +74,6 @@ router
     .post('/api/chat/reply', chat.reply.bind(chat))
     .get('/api/chat/:id', chat.load.bind(chat))
     .post('/api/chat/:id', chat.load.bind(chat));
-
-router
-    .post('/api/export/:type', exporter.anyExport.bind(exporter));
-
-router
-    .get('/go/:linkId/:stageId/:chatId/:botId', go.go);
 
 app
     .use(bodyParser({

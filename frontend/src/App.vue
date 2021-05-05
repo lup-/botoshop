@@ -41,7 +41,7 @@
         <v-app-bar app clipped-left>
             <v-app-bar-nav-icon v-if="!mini" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
             <v-btn icon v-if="showChatMenuButton" @click.stop="toggleChatMenu"><v-icon>mdi-chat</v-icon></v-btn>
-            <v-toolbar-title>Воронки</v-toolbar-title>
+            <v-toolbar-title>Ботошоп<sup>&alpha;</sup></v-toolbar-title>
             <v-progress-linear
                     :active="isLoading"
                     :indeterminate="isLoading"
@@ -82,7 +82,7 @@
         },
         methods: {
             async logout() {
-                await this.$store.dispatch('logoutUser');
+                await this.$store.dispatch('logoutOwner');
                 return this.$router.push({name: 'login'});
             },
             toggleChatMenu() {

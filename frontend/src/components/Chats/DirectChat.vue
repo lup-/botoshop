@@ -1,30 +1,21 @@
 <template>
     <v-container class="fill-height align-start content-container" fluid app style="position: relative">
         <v-navigation-drawer absolute :permanent="isWideDisplay" v-model="showSidebar">
-            <v-expansion-panels accordion class="chat-list">
-                <v-expansion-panel v-for="data in grouppedChats" :key="data.funnelId">
-                    <v-expansion-panel-header>
-                        {{data.funnel ? data.funnel.title || 'Без названия' : 'Без воронки'}}
-                    </v-expansion-panel-header>
-                    <v-expansion-panel-content>
-                        <v-list>
-                            <v-list-item-group color="primary">
-                                <v-list-item v-for="chat in data.chats" :key="chat.id" @click="selectChat(chat)">
-                                    <v-list-item-content>
-                                        <v-list-item-title v-if="chat.unreadMessages && chat.unreadMessages.length > 0">
-                                            <v-badge color="error" :content="chat.unreadMessages.length">{{getChatTitle(chat.user)}}</v-badge>
-                                        </v-list-item-title>
-                                        <v-list-item-title v-else>{{getChatTitle(chat.user)}}</v-list-item-title>
-                                    </v-list-item-content>
-                                    <v-list-item-action>
-                                        <v-btn icon @click.stop="markRead(chat)"><v-icon>mdi-eye-off</v-icon></v-btn>
-                                    </v-list-item-action>
-                                </v-list-item>
-                            </v-list-item-group>
-                        </v-list>
-                    </v-expansion-panel-content>
-                </v-expansion-panel>
-            </v-expansion-panels>
+            <v-list>
+                <v-list-item-group color="primary">
+                    <v-list-item v-for="chat in unreadChats" :key="chat.id" @click="selectChat(chat)">
+                        <v-list-item-content>
+                            <v-list-item-title v-if="chat.unreadMessages && chat.unreadMessages.length > 0">
+                                <v-badge color="error" :content="chat.unreadMessages.length">{{getChatTitle(chat.user)}}</v-badge>
+                            </v-list-item-title>
+                            <v-list-item-title v-else>{{getChatTitle(chat.user)}}</v-list-item-title>
+                        </v-list-item-content>
+                        <v-list-item-action>
+                            <v-btn icon @click.stop="markRead(chat)"><v-icon>mdi-eye-off</v-icon></v-btn>
+                        </v-list-item-action>
+                    </v-list-item>
+                </v-list-item-group>
+            </v-list>
         </v-navigation-drawer>
 
         <v-btn fab bottom right fixed large color="primary" @click="showChatSearch = true">
@@ -56,7 +47,7 @@
                 <v-sheet class="message-block white" v-if="selectedChat">
                     <v-row>
                         <v-col cols="12">
-                            <v-textarea v-model="reply[selectedChat.id+':'+selectedChat.botId]" label="Сообщение"></v-textarea>
+                            <v-textarea v-model="reply[selectedChat.id]" label="Сообщение"></v-textarea>
                         </v-col>
                     </v-row>
                     <v-row>
@@ -87,8 +78,6 @@
         name: "DirectChat",
         components: {ChatSearchDialog},
         async mounted() {
-            await this.loadBots();
-            await this.loadFunnels();
             await this.loadUnreadChats();
             this.startHistoryPolling();
         },
@@ -98,6 +87,7 @@
         data() {
             return {
                 selectedChat: null,
+                selectedChatIndex: null,
                 reply: {},
                 pollIntervalId: false,
                 pollMs: 10000,
@@ -112,16 +102,8 @@
                 }
 
                 await this.$store.dispatch('addChat', this.newChat);
-                let {funnelId} = this.newChat.profile;
-                this.selectedFunnelIndex = this.activeFunnels.findIndex(funnel => funnel.id === funnelId);
                 this.selectedChatIndex = this.unreadChats.length - 1;
                 this.showChatSearch = false;
-            },
-            loadFunnels() {
-                return this.$store.dispatch('funnel/loadItems');
-            },
-            loadBots() {
-                return this.$store.dispatch('bot/loadItems');
             },
             loadUnreadChats() {
                 return this.$store.dispatch('loadUnreadChats');
@@ -160,87 +142,24 @@
                 let time = moment.unix(message.date);
                 return time.fromNow();
             },
-            getStageName(message) {
-                let {funnelId, stageId} = message;
-                let stage = this.$store.getters['stage/byFunnelAndId'](funnelId, stageId);
-                if (stage) {
-                    return stage.title;
-                }
-            },
             sendReply() {
-                let key = this.selectedChat.id+':'+this.selectedChat.botId;
+                let key = this.selectedChat.id;
                 let text = this.reply[key];
-                let funnelId = this.selectedFunnel ? this.selectedFunnel.id : null;
                 this.reply[key] = '';
 
-                this.$store.dispatch('reply', {id: this.selectedChat.id, botId: this.selectedChat.botId, funnelId, text})
+                this.$store.dispatch('reply', {id: this.selectedChat.id, text})
             },
             markRead(chat) {
                 this.selectedChatIndex = null;
-                this.$store.dispatch('markRead', {chatId: chat.id, botId: chat.botId});
+                this.$store.dispatch('markRead', {chatId: chat.id});
             }
         },
         computed: {
             unreadChats() {
                 return this.$store.state.chat.unread;
             },
-            grouppedChats() {
-                if (!this.unreadChats) {
-                    return [];
-                }
-
-                let chatsHash = {};
-                for (let chat of this.unreadChats) {
-                    for (let funnelId of chat.funnelIds) {
-                        if (!chatsHash[funnelId]) {
-                            chatsHash[funnelId] = [];
-                        }
-
-                        chatsHash[funnelId].push(chat);
-                    }
-                }
-
-                let grouppedChats = [];
-                for (let funnelId in chatsHash) {
-                    let funnel = this.$store.getters['funnel/byId'](funnelId);
-                    let chats = chatsHash[funnelId];
-                    grouppedChats.push({funnelId, funnel, chats});
-                }
-
-                return grouppedChats;
-            },
             chatMessages() {
-                let history = this.$store.state.chat.chatHistory;
-                if (this.selectedFunnel) {
-                    history = history.filter(chat => chat.funnelId === this.selectedFunnel.id || !chat.funnelId);
-                }
-
-                return history;
-            },
-            activeFunnels() {
-                let botIds = this.unreadChats
-                    .map(chat => chat.botId)
-                    .filter( (id, index, all) =>  all.indexOf(id) === index );
-
-                let bots = this.$store.state.bot.list.filter(bot => botIds.indexOf(bot.botId) !== -1);
-                let funnelsIds = bots
-                    .reduce( (funnels, bot) => funnels.concat(bot.funnels || []), [] )
-                    .filter( (id, index, all) =>  all.indexOf(id) === index );
-
-                let funnels = this.$store.state.funnel.list.filter(funnel => funnelsIds.indexOf(funnel.id) !== -1);
-
-                return funnels;
-            },
-            selectedFunnel() {
-                if (this.activeFunnels.length === 0) {
-                    return null;
-                }
-
-                if (this.selectedFunnelIndex === null) {
-                    return null;
-                }
-
-                return this.activeFunnels[this.selectedFunnelIndex];
+                return this.$store.state.chat.chatHistory;
             },
             isWideDisplay() {
                 let alwaysShowBreakpoints = ['md', 'lg', 'xl'];

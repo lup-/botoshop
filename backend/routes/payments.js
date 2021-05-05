@@ -8,8 +8,12 @@ module.exports = {
         let filter = ctx.request.body && ctx.request.body.filter
             ? ctx.request.body.filter || {}
             : {};
+        let shopId = ctx.request.body && ctx.request.body.shop && ctx.request.body.shop.id
+            ? ctx.request.body.shop.id|| null
+            : null;
 
         let defaultFilter = {
+            shopId,
             'deleted': {$in: [null, false]}
         };
 
