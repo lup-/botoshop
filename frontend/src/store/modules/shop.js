@@ -15,6 +15,19 @@ export default {
             if (response.data.bot) {
                 commit('setBot', response.data.bot);
             }
+            let isSuccess = response && response.data && response.data.shop;
+            let isSyncSuccess = response && response.data && response.data.restart && !response.data.restart.error;
+
+            if (isSuccess && isSyncSuccess) {
+                commit('setSuccessMessage', 'Данные сохранены!', { root: true });
+            }
+            else if (isSuccess) {
+                commit('setWarnMessage', 'Данные сохранены, но бот не перезапущен!', { root: true });
+            }
+            else {
+                commit('setErrorMessage', 'Ошибка сохранения данных!', { root: true });
+            }
+
             return commit('setShop', response.data.shop);
         },
     },

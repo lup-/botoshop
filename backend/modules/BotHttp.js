@@ -16,15 +16,15 @@ module.exports = {
         return result;
     },
 
-    async restartBot(bot) {
+    async restartBot(shop) {
         let result = null;
 
         try {
-            let {data} = await axios.post(BOT_HTTP_INTERFACE_URL + '/restartBot', {bot});
+            let {data} = await axios.post(BOT_HTTP_INTERFACE_URL + '/restartBot', {shop});
             result = data;
         }
         catch (e) {
-            result = {error: e};
+            result = {error: e.toString()};
         }
 
         return result;

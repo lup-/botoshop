@@ -1,6 +1,10 @@
 const he = require('he');
 const { Markup } = require('telegraf');
 
+function getPaymentButton(text) {
+    return Markup.button.pay(text);
+}
+
 function getMarkupButtons(buttons, columns = false) {
     if (columns === true) {
         columns = 1;
@@ -68,6 +72,13 @@ module.exports = {
         let mainButtons = getMarkupButtons(buttons, buttonColumns);
         let controlButtons = getMarkupButtons(controls, controls.length);
         let allButtons = mainButtons.concat(controlButtons);
+        return Markup.inlineKeyboard(allButtons);
+    },
+    menuWithPayment(paymentText, buttons, columns = false) {
+        let paymentButton = getPaymentButton(paymentText);
+        let menuButtons = getMarkupButtons(buttons, columns);
+        let allButtons = menuButtons;
+        allButtons.unshift([paymentButton]);
         return Markup.inlineKeyboard(allButtons);
     },
     escapeHTML(html, decode = false) {

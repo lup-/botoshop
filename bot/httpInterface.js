@@ -3,6 +3,7 @@ const {getDb} = require('./lib/database');
 const Koa = require('koa');
 const Router = require('@koa/router');
 const bodyParser = require('koa-bodyparser');
+const BOT_HTTP_INTERFACE_PORT = process.env.BOT_HTTP_INTERFACE_PORT || 3000;
 
 function catchErrors(thisArg, route) {
     return (ctx) => {
@@ -52,17 +53,23 @@ module.exports = class HttpInterface {
     }
 
     async restartBot(ctx) {
-        let bot = ctx.request.body.bot;
-        await this.botManager.restartBot(bot)
-        ctx.body = {bot};
+        let shop = ctx.request.body.shop;
+        try {
+            let result = await this.botManager.restartBot(shop);
+            let bot = result.restartedBot.botInfo;
+            ctx.body = {shop, bot};
+        }
+        catch (e) {
+            ctx.body = {error: e};
+        }
     }
 
     async restartAllBots(ctx) {
-        let bots = await this.botManager.restartAll();
-        ctx.body = {bots}
+        let shops = await this.botManager.restartAll();
+        ctx.body = {shops}
     }
 
     launch() {
-        return this.httpIO.listen(3000, '0.0.0.0');
+        return this.httpIO.listen(BOT_HTTP_INTERFACE_PORT, '0.0.0.0');
     }
 }

@@ -3,7 +3,7 @@ const axios = require('axios');
 const shortid = require('shortid');
 const {Telegraf} = require('telegraf');
 const {getDb} = require('../lib/database');
-const {wait, eventLoopQueue, menu} = require('../lib/helpers');
+const {wait, eventLoopQueue, menu, escapeHTML} = require('../lib/helpers');
 const {cleanMessages, addMessage} = require('../lib/cleanup');
 
 const PAYMENT_CHECK_INTERVAL_SEC = process.env.PAYMENT_CHECK_INTERVAL_SEC ? parseInt(process.env.PAYMENT_CHECK_INTERVAL_SEC) : 60;
@@ -217,9 +217,72 @@ module.exports = class Payment {
             return false;
         }
     }
-    async addTgPaymentAndSaveToDb(ctx, item) {
-
+    async getItemById(itemId, shopId) {
+        let db = await getDb();
+        return db.collection('products').findOne({id: itemId, shopId});
     }
+
+    async addTgPaymentAndSaveToDb(ctx) {
+        let message = ctx.update.message;
+        let telegramPayment = message.successful_payment;
+        let itemId = telegramPayment.invoice_payload;
+
+        let profile = ctx.session.profile;
+        let shopId = ctx.shop.getId();
+        let botId = profile.botId;
+        let item = await this.getItemById(itemId, shopId);
+
+        let price = item.price;
+
+        if (telegramPayment) {
+            let db = await getDb();
+            let result = await db.collection('payments').insertOne({
+                id: telegramPayment.provider_payment_charge_id,
+                shopId,
+                botId,
+                status: 'succeeded',
+                created: moment().unix(),
+                finished: moment().unix(),
+                item,
+                price,
+                profile,
+                telegramPayment
+            });
+
+            return result.ops && result.ops[0] ? result.ops[0] : false;
+        }
+        else {
+            return false;
+        }
+    }
+
+    async addOrder(ctx, payment) {
+        let order = {
+            id: shortid(),
+            botId: ctx.botInfo.id,
+            chatId: ctx.chat.id,
+            userId: ctx.from.id,
+            shopId: ctx.shop.getId(),
+            tgUsername: payment.profile.username,
+            tgName: [payment.profile.firstName, payment.profile.lastName].join(' '),
+            name: payment.telegramPayment.order_info.name || null,
+            phone: payment.telegramPayment.order_info.phone_number || null,
+            email: payment.telegramPayment.order_info.email || null,
+            address: payment.telegramPayment.order_info.shipping_address || null,
+            status: 'payed',
+            product: payment.item,
+            price: payment.item.price,
+            shippingPrice: payment.item.shippingPrice || 0,
+            payedPrice: payment.telegramPayment.total_amount / 100 || 0,
+            created: moment().unix(),
+            updated: moment().unix(),
+        }
+
+        let db = await getDb();
+        let result = await db.collection('orders').insertOne(order);
+        return result.ops && result.ops[0] ? result.ops[0] : false;
+    }
+
     async addPaymentAndGetPaymentUrl(ctx, item) {
         let payment = await this.addPaymentAndSaveToDb(ctx, item);
 

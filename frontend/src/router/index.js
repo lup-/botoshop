@@ -10,6 +10,8 @@ import Login from '../components/Users/Login';
 import Register from '../components/Users/Register';
 import ProductsEdit from '../components/Products/Edit';
 import ProductsList from '../components/Products/List';
+import OrdersEdit from '../components/Orders/Edit';
+import OrdersList from '../components/Orders/List';
 import DirectChat from "@/components/Chats/DirectChat";
 import CategoriesList from '../components/Categories/List';
 import CategoryEdit from '../components/Categories/Edit';
@@ -36,6 +38,8 @@ const routes = [
     { name: 'productsList', path: '/products/', component: ProductsList, meta: {requiresAuth: true, group: 'productsList'} },
     { name: 'productNew', path: '/products/new', component: ProductsEdit, meta: {requiresAuth: true, group: 'productsList'} },
     { name: 'productEdit', path: '/products/:id', component: ProductsEdit, meta: {requiresAuth: true, group: 'productsList'} },
+    { name: 'ordersList', path: '/orders/', component: OrdersList, meta: {requiresAuth: true, group: 'ordersList'} },
+    { name: 'orderEdit', path: '/orders/:id', component: OrdersEdit, meta: {requiresAuth: true, group: 'ordersList'} },
     { name: 'usersList', path: '/users/', component: UsersList, meta: {requiresAuth: true, group: 'usersList'} },
     { name: 'chats', path: '/chats', component: DirectChat, meta: {requiresAuth: true, group: 'chats'} },
 ]

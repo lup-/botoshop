@@ -20,9 +20,8 @@ module.exports = function () {
 
     scene.enter(async ctx => {
         let hasFavorites = ctx.session.profile && ctx.session.profile.favorite && ctx.session.profile.favorite.length > 0;
-        let hasCategories = ctx.session.profile && ctx.session.profile.category && ctx.session.profile.category.length > 0;
 
-        if (hasFavorites || hasCategories) {
+        if (hasFavorites) {
             let buttons = [];
             if (hasFavorites) {
                 buttons.push( {code: 'favorite', text: 'В избранное'});
@@ -30,7 +29,7 @@ module.exports = function () {
 
             buttons.push({code: 'list', text: 'В каталог'});
 
-            return ctx.replyWithDisposable('reply', 'Куда дальше?', menu(buttons));
+            return ctx.replyWithDisposable('reply', 'Куда дальше?', menu(buttons, 1));
         }
 
         return routeToNextStep(ctx);

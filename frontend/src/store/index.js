@@ -10,6 +10,7 @@ import category from "./modules/category";
 import payment from "./modules/payment";
 import product from "./modules/product";
 import chat from "./modules/chat";
+import order from "./modules/order";
 
 Vue.use(Vuex);
 
@@ -20,10 +21,11 @@ export default new Vuex.Store({
         loading: false,
         routes: [
             {code: 'statsDetails', title: 'Статистика', icon: 'mdi-database'},
-            {code: 'chats', title: 'Переписка', icon: 'mdi-chat'},
+            {code: 'ordersList', title: 'Заказы', icon: 'mdi-cart'},
+            // {code: 'chats', title: 'Переписка', icon: 'mdi-chat'},
             {code: 'mailingsList', title: 'Рассылки', icon: 'mdi-email'},
             {code: 'categoriesList', title: 'Категории', icon: 'mdi-tag-multiple'},
-            {code: 'productsList', title: 'Товары', icon: 'mdi-cart'},
+            {code: 'productsList', title: 'Товары', icon: 'mdi-gift'},
             {code: 'paymentsList', title: 'Платежи', icon: 'mdi-cash'},
             {code: 'usersList', title: 'Пользователи', icon: 'mdi-account'},
             {code: 'settings', title: 'Настройки', icon: 'mdi-cog'},
@@ -55,6 +57,9 @@ export default new Vuex.Store({
         setInfoMessage(state, text) {
             state.appMessage = {text, color: 'info'};
         },
+        setWarnMessage(state, text) {
+            state.appMessage = {text, color: 'orange darken-2'};
+        },
         setShowChatsList(state, newShowState) {
             state.showChatsList = newShowState;
         }
@@ -69,6 +74,7 @@ export default new Vuex.Store({
         product,
         chat,
         owner,
-        category
+        category,
+        order
     }
 })

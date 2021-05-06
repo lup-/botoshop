@@ -9,15 +9,13 @@
                         :loading="isLoading"
                         :items-per-page="50"
                         multi-sort
-                        :sort-by="['created']"
+                        :sort-by="['updated']"
                         :sort-desc="[true]"
                         locale="ru"
                 >
-                    <template v-slot:item.auto="{ item }">
-                        <v-simple-checkbox
-                                v-model="item.auto"
-                                disabled
-                        ></v-simple-checkbox>
+                    <template v-slot:item.actions="{ item }">
+                        <v-btn icon small @click="gotoEdit(item.id)"><v-icon>mdi-eye</v-icon></v-btn>
+                        <v-btn icon small @click="deleteItem(item)"><v-icon>mdi-archive-arrow-down</v-icon></v-btn>
                     </template>
                 </v-data-table>
             </v-col>
@@ -26,6 +24,7 @@
 </template>
 
 <script>
+    import CrudList from "@/components/CrudList";
     import moment from "moment";
 
     function clone(obj) {
@@ -33,42 +32,43 @@
     }
 
     export default {
-        name: "PaymentsList",
+        extends: CrudList,
         data() {
             return {
                 isLoading: false,
+                statuses: [
+                    {text: 'Новый', value: 'new'},
+                    {text: 'Оплачен', value: 'payed'},
+                    {text: 'В работе', value: 'progress'},
+                    {text: 'Завершен', value: 'finished'},
+                ],
                 headers: [
-                    {text: 'Пользователь', value: 'user'},
                     {text: 'Дата платежа', value: 'created'},
-                    {text: 'Сумма', value: 'price'},
+                    {text: 'Заказчик', value: 'user'},
                     {text: 'Статус', value: 'status'},
-                    // {text: 'Автоматический', value: 'auto'},
-                    {text: 'Дата проведения', value: 'finished'},
-                ]
+                    {text: 'Товар', value: 'productTitle'},
+                    {text: 'Оплачено', value: 'payedPrice'},
+                    {text: 'Действия', value: 'actions', sortable: false},
+                ],
+
+                ACTION_LOAD: 'order/loadItems',
+                ACTION_DELETE: 'order/deleteItem',
+                ROUTE_EDIT: 'orderEdit',
+                STORE_MODULE: 'order'
             }
-        },
-        async mounted() {
-            await this.loadItems();
-        },
-        methods: {
-            async loadItems() {
-                this.isLoading = true;
-                await this.$store.dispatch('loadPayments', {});
-                this.isLoading = false;
-            },
         },
         computed: {
             items() {
-                return this.isLoading ? [] : this.$store.state.payment.list.map(item => {
+                return this.isLoading ? [] : this.$store.state.order.list.map(item => {
                     let newItem = clone(item);
-                    let userName = [item.profile.firstName, item.profile.lastName].join(' ');
-                    if (item.profile.userName) {
-                        userName += ` (@${item.profile.userName})`;
-                    }
+                    let userName = item.name || item.tgName;
+                    let status = this.statuses.find(status => status.value === item.status);
 
                     newItem.user = userName;
+                    newItem.status = status.text || null;
                     newItem.created = item.created ? moment.unix(item.created).format('DD.MM.YYYY HH:mm') : '-';
-                    newItem.finished = item.finished ? moment.unix(item.finished).format('DD.MM.YYYY HH:mm') : '-';
+                    newItem.productTitle = item.product.title;
+
                     return newItem;
                 });
             },
@@ -78,7 +78,3 @@
         }
     }
 </script>
-
-<style>
-    .row-archived {color: darkgray}
-</style>

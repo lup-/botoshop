@@ -8,6 +8,7 @@ module.exports = class Profile {
         this.shopId = shopId;
         this.ctx = ctx;
         this.profile = false;
+        this.favorites = [];
         this.sessionProfile = ctx.session && ctx.session.profile ? ctx.session.profile : false;
         this.shopId = ctx.session && ctx.session.shopId ? ctx.session.shopId : null;
     }
@@ -63,6 +64,8 @@ module.exports = class Profile {
                 }
             }
         }
+
+        await this.loadFavorites();
 
         return this.profile;
     }
@@ -138,6 +141,21 @@ module.exports = class Profile {
         return this.profile.favorite || [];
     }
 
+    async loadFavorites() {
+        const db = await getDb();
+        let favoriteIds = this.getFavoriteIds();
+
+        this.favorites = await db.collection('products').find({shopId: this.shopId, id: {$in: favoriteIds}}).toArray();
+    }
+
+    getFavorites() {
+        return this.favorites;
+    }
+
+    getFavoriteIndex(currentIndex) {
+        return this.favorites[currentIndex];
+    }
+
     getSelectedCategoryIds() {
         return this.profile.category || [];
     }
@@ -155,6 +173,7 @@ module.exports = class Profile {
             this.profile.favorite.splice(favIndex, 1);
         }
 
+        await this.loadFavorites();
         return this.saveProfile();
     }
 

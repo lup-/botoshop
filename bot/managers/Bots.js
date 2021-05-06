@@ -1,10 +1,12 @@
 const {getDb} = require('../lib/database');
 const setupBot = require('../lib/setup');
+const Payment = require('../managers/Payment');
+const {menu} = require('../lib/helpers');
 
 module.exports = class BotManager {
     constructor() {
         this.runningBots = [];
-        this.allBots = [];
+        this.allShops = [];
         this.botFunnels = [];
     }
 
@@ -15,7 +17,7 @@ module.exports = class BotManager {
         return next();
     }
 
-    createBot(shop) {
+    async createBot(shop) {
         let settings = shop.settings || {};
         if (!settings.botToken) {
             return null;
@@ -34,27 +36,90 @@ module.exports = class BotManager {
             .addHandleBlocks()
             .addScenes()
             .addDisclaimer(settings.description, ctx => ctx.scene.enter('menu'))
+            .addRoute('on', 'message', async (ctx, next) => {
+                let isSuccessfulPayment = ctx.update && ctx.update.message && typeof(ctx.update.message.successful_payment) != 'undefined';
+                if (isSuccessfulPayment) {
+                    const payment = new Payment();
+                    let savedPayment = await payment.addTgPaymentAndSaveToDb(ctx);
+                    let order = await payment.addOrder(ctx, savedPayment);
+
+                    let product = order.product;
+                    let isDownloadable = product && product.files && product.files.length > 0;
+                    if (isDownloadable) {
+                        await ctx.shop.sendFiles(ctx.telegram, ctx.chat.id, ctx.botInfo.id, null, product);
+                        return ctx.reply(`Спасибо за заказ!`, menu([{code: 'discover', text: 'Продолжить покупки'}]));
+                    }
+                    else {
+                        let successMessageTemplate = ctx.shop.getSetting('successMessage') || 'Код вашего заказа :orderId:. Ожидайте, скоро с вами свяжутся!';
+                        let successMessage = successMessageTemplate
+                            .replace(':orderId:', order.id);
+
+                        return ctx.reply(successMessage, menu([{code: 'discover', text: 'Продолжить покупки'}]));
+                    }
+                }
+                else {
+                    next();
+                }
+            })
+            .addRoute('on', 'pre_checkout_query', ctx => {
+                let queryId = ctx.update.pre_checkout_query.id;
+                return ctx.answerPreCheckoutQuery(true, queryId);
+            })
             .addDefaultRoute(ctx => ctx.scene.enter('discover'));
 
         let bot = app.get();
+        bot.on()
         bot.shop = shop;
-        bot.launch();
+        await bot.launch();
 
         return bot;
     }
 
-    stopBot(botToStop) {
-        let botIndex = this.allBots.findIndex(bot => bot.id === botToStop.id);
+    stopBotByShopId(shopIdToStop) {
+        let botIndex = this.runningBots.findIndex(bot => bot.shop ? bot.shop.id === shopIdToStop : false);
         if (botIndex !== -1) {
-            let runningBot = this.runningBots.splice(botIndex, 1)[0];
-            console.log(botIndex, this.runningBots, runningBot);
-            return runningBot ? runningBot.stop() : false;
+            let runningBot = this.runningBots[botIndex];
+            if (!runningBot) {
+                return false;
+            }
+
+            return new Promise((resolve, reject) => {
+                const TIMEOUT = 3000;
+                let wait = 0;
+
+                let interval = null;
+                runningBot.stop();
+
+                interval = setInterval(() => {
+                    if (wait > TIMEOUT) {
+                        clearInterval(interval);
+                        reject();
+                    }
+
+                    if (runningBot.polling.abortController.signal.aborted) {
+                        clearInterval(interval);
+                        this.runningBots.splice(botIndex, 1);
+                        resolve();
+                    }
+                    else {
+                        wait++;
+                    }
+                }, 1);
+            });
         }
+
+        return false;
     }
 
-    async restartBot(botToRestart) {
-        await this.stopBot(botToRestart);
-        this.createBot(botToRestart);
+    stopBot(shopToStop) {
+        return this.stopBotByShopId(shopToStop.id);
+    }
+
+    async restartBot(shopToRestart) {
+        let stopResult = await this.stopBot(shopToRestart);
+        let restartedBot = await this.createBot(shopToRestart);
+        this.runningBots.push(restartedBot);
+        return {stopResult, restartedBot};
     }
 
     async loadBots() {
@@ -65,45 +130,54 @@ module.exports = class BotManager {
         };
 
         let db = await getDb();
-        this.allBots = await db.collection('shops').find(filter).toArray();
+        this.allShops = await db.collection('shops').find(filter).toArray();
     }
 
     async launchBots() {
         await this.loadBots();
-        this.runningBots = this.allBots.map(this.createBot.bind(this));
+        this.runningBots = await Promise.all( this.allShops.map(this.createBot.bind(this)) );
         return this.runningBotsInfo();
     }
 
     async launchNewBots() {
         await this.loadBots();
-        let runningBotUsernames = this.runningBots.map(telegraf => telegraf.botInfo.username);
-        let allUsernames = this.allBots.map(bot => bot.username);
-        let newBotNames = allUsernames.filter(name => runningBotUsernames.indexOf(name) === -1);
-        if (newBotNames.length > 0) {
-            let newBots = this.allBots.filter(bot => newBotNames.indexOf(bot.username) !== -1);
-            let newRunningBots = newBots.map(this.createBot.bind(this));
-            this.runningBots = this.runningBots.concat(newRunningBots);
+        let runningBotShopIds = this.runningBots
+            .map(telegraf => telegraf.shop ? telegraf.shop.id : false)
+            .filter(shopId => shopId !== false)
+            .filter((shopId, index, allIds) => allIds.indexOf(shopId) === index);
+
+        let allShopIds = this.allShops.map(shop => shop.id);
+        let newShopIds = allShopIds.filter(shopId => runningBotShopIds.indexOf(shopId) === -1);
+        if (newShopIds.length > 0) {
+            let newShops = this.allShops.filter(shop => newShopIds.indexOf(shop.id) !== -1);
+            let newRunningShops = await Promise.all( newShops.map(this.createBot.bind(this)) );
+            this.runningBots = this.runningBots.concat(newRunningShops);
         }
 
-        return newBotNames.length;
+        return newShopIds.length;
     }
 
     async stopOldBots() {
         await this.loadBots();
-        let runningBotUsernames = this.runningBots.map(telegraf => telegraf.botInfo ? telegraf.botInfo.username : false);
-        let allUsernames = this.allBots.map(bot => bot.username);
-        let missingNames = runningBotUsernames.filter(name => allUsernames.indexOf(name) === -1);
-        if (missingNames.length > 0) {
-            let missingBotIds = this.runningBots
-                .filter(telegraf => missingNames.indexOf(telegraf.botInfo.username) !== -1)
-                .map(telegraf => telegraf.botDbId);
+        let runningBotShopIds = this.runningBots
+            .map(telegraf => telegraf.shop ? telegraf.shop.id : false)
+            .filter(shopId => shopId !== false)
+            .filter((shopId, index, allIds) => allIds.indexOf(shopId) === index);
 
-            for (const id in missingBotIds) {
-                await this.stopBot({id});
+        let allShopIds = this.allShops.map(shop => shop.id);
+        let missingShops = runningBotShopIds.filter(shopId => allShopIds.indexOf(shopId) === -1);
+        if (missingShops.length > 0) {
+            let missingShopIds = this.runningBots
+                .filter(telegraf => telegraf.shop && telegraf.shop.id && missingShops.indexOf(telegraf.shop.id) !== -1)
+                .map(telegraf => telegraf.shop ? telegraf.shop.id : false)
+                .filter(shopId => shopId !== false);
+
+            for (const id in missingShopIds) {
+                await this.stopBotByShopId(id);
             }
         }
 
-        return missingNames.length;
+        return missingShops.length;
     }
 
     async syncBots() {

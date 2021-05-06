@@ -5,115 +5,142 @@
                 <v-card>
                     <v-card-title>{{isNew ? 'Новый товар' : 'Редактирование товара'}}</v-card-title>
                     <v-card-text>
-                        <v-form autocomplete="off">
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-text-field
+                                        v-model="item.title"
+                                        label="Название товара"
+                                        counter="32"
+                                ></v-text-field>
+                            </v-col>
+                        </v-row>
 
-                            <v-row class="mt-4">
-                                <v-col cols="12">
-                                    <v-text-field
-                                            v-model="item.title"
-                                            label="Название товара"
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-textarea
+                                        v-model="item.description"
+                                        label="Описание товара"
+                                        counter="255"
+                                ></v-textarea>
+                            </v-col>
+                        </v-row>
 
-                            <v-row class="mt-4">
-                                <v-col cols="12">
-                                    <v-file-input
-                                            ref="fileInput"
-                                            v-model="photo"
-                                            @change="addPhoto"
-                                            hint="Фотографии товара"
-                                            persistent-hint
-                                    ></v-file-input>
-                                </v-col>
-                            </v-row>
+                        <v-autocomplete
+                                :items="categories"
+                                v-model="item.categories"
+                                chips
+                                deletable-chips
+                                multiple
+                                item-text="title"
+                                item-value="id"
+                                label="Категории"
+                        ></v-autocomplete>
 
-                            <v-row class="my-4" v-if="item.photos && item.photos.length > 0">
-                                <v-col cols="12">
-                                    <v-chip v-for="(photo, index) in item.photos" :key="photo.name"
-                                            class="mr-2 mb-2"
-                                            close
-                                            close-icon="mdi-delete"
-                                            @click:close="deletePhoto(index)"
-                                    >
-                                        <v-avatar left>
-                                            <v-img :src="photo.src"></v-img>
-                                        </v-avatar>
-                                        {{photo.name}}
-                                    </v-chip>
-                                </v-col>
-                            </v-row>
-
-                            <v-autocomplete
-                                    :items="categories"
-                                    v-model="item.categories"
-                                    chips
-                                    deletable-chips
-                                    multiple
-                                    item-text="title"
-                                    item-value="id"
-                                    label="Категории"
-                            ></v-autocomplete>
-
-                            <v-row class="mt-4">
-                                <v-col cols="12">
-                                    <v-text-field
-                                            v-model="item.price"
-                                            label="Цена"
-                                            type="number"
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
-
-
-                            <v-row class="mt-4">
-                                <v-col cols="12">
-                                    <v-text-field
-                                            v-model="item.originalPrice"
-                                            label="Старая стоимость"
-                                            hint="Для скидки"
-                                            persistent-hint
-                                            type="number"
-                                    ></v-text-field>
-                                </v-col>
-                            </v-row>
-
-                            <v-row class="mt-4">
-                                <v-col cols="12">
-                                    <v-file-input
-                                            ref="fileInput"
-                                            v-model="file"
-                                            @change="addFile"
-                                            hint="Прикрепить файл для скачиваемых товаров"
-                                            persistent-hint
-                                    ></v-file-input>
-                                </v-col>
-                            </v-row>
-
-                            <v-row class="my-4" v-if="files && files.length > 0">
-                                <v-col cols="12">Файлы:</v-col>
-                                <v-col cols="12">
-                                    <v-chip v-for="(file, index) in files" :key="file.name"
-                                            class="mr-2 mb-2"
-                                            close
-                                            close-icon="mdi-delete"
-                                            @click:close="deleteFile(index)"
-                                    >
-                                        {{file.name}}
-                                    </v-chip>
-                                </v-col>
-                            </v-row>
-
-                            <v-row class="mt-4 no-files">
-                                <v-col cols="12">
-                                    <vue-trix
-                                            v-model="item.description"
-                                    ></vue-trix>
-                                </v-col>
-                            </v-row>
-
-                        </v-form>
                     </v-card-text>
+                    <v-divider></v-divider>
+                    <v-card-text>
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-file-input
+                                        ref="fileInput"
+                                        v-model="photo"
+                                        @change="addPhoto"
+                                        hint="Фотографии товара"
+                                        persistent-hint
+                                ></v-file-input>
+                            </v-col>
+                        </v-row>
+
+                        <v-row class="my-4" v-if="item.photos && item.photos.length > 0">
+                            <v-col cols="12">
+                                <v-chip v-for="(photo, index) in item.photos" :key="photo.name"
+                                        class="mr-2 mb-2"
+                                        close
+                                        close-icon="mdi-delete"
+                                        @click:close="deletePhoto(index)"
+                                >
+                                    <v-avatar left>
+                                        <v-img :src="photo.src"></v-img>
+                                    </v-avatar>
+                                    {{photo.name}}
+                                </v-chip>
+                            </v-col>
+                        </v-row>
+                    </v-card-text>
+                    <v-divider></v-divider>
+                    <v-card-text>
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-text-field
+                                        v-model="item.price"
+                                        label="Цена"
+                                        type="number"
+                                ></v-text-field>
+                            </v-col>
+                        </v-row>
+
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-text-field
+                                        v-model="item.originalPrice"
+                                        label="Старая стоимость"
+                                        hint="Для скидки"
+                                        persistent-hint
+                                        type="number"
+                                ></v-text-field>
+                            </v-col>
+                        </v-row>
+
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-switch
+                                        v-model="item.needsShipping"
+                                        label="Требуется адрес доставки"
+                                ></v-switch>
+                            </v-col>
+                        </v-row>
+
+                        <v-row class="mt-4" v-if="item.needsShipping">
+                            <v-col cols="12">
+                                <v-text-field
+                                        v-model="item.shippingPrice"
+                                        label="Стоимость доставки"
+                                        type="number"
+                                        hint="Можно оставить пустым, если доставка бесплатна"
+                                        persistent-hint
+                                ></v-text-field>
+                            </v-col>
+                        </v-row>
+                    </v-card-text>
+                    <v-divider></v-divider>
+                    <v-card-text>
+                        <v-row class="mt-4">
+                            <v-col cols="12">
+                                <v-file-input
+                                        ref="fileInput"
+                                        v-model="file"
+                                        @change="addFile"
+                                        hint="Прикрепить файл для скачиваемых товаров"
+                                        persistent-hint
+                                ></v-file-input>
+                            </v-col>
+                        </v-row>
+
+                        <v-row class="my-4" v-if="files && files.length > 0">
+                            <v-col cols="12">Файлы:</v-col>
+                            <v-col cols="12">
+                                <v-chip v-for="(file, index) in files" :key="file.name"
+                                        class="mr-2 mb-2"
+                                        close
+                                        close-icon="mdi-delete"
+                                        @click:close="deleteFile(index)"
+                                >
+                                    {{file.name}}
+                                </v-chip>
+                            </v-col>
+                        </v-row>
+                    </v-card-text>
+                    <v-divider></v-divider>
                     <v-card-actions>
                         <v-btn @click="gotoList">К списку</v-btn>
                         <v-btn large color="primary" @click="save">Сохранить</v-btn>

@@ -20,6 +20,20 @@ module.exports = class Shop {
         return this.shop ? this.shop.id : null;
     }
 
+    getSetting(key) {
+        return this.shop && this.shop.settings && this.shop.settings[key]
+            ? this.shop.settings[key]
+            : null;
+    }
+
+    getProviderToken() {
+        return this.getSetting('providerToken');
+    }
+
+    useYooKassa() {
+        return this.getSetting('useYooKassa') || false;
+    }
+
     async loadProducts() {
         let db = await getDb();
         this.products = await db.collection('products').find({shopId: this.getId()}).toArray();

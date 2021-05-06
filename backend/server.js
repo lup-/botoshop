@@ -13,6 +13,7 @@ const products = require('./routes/products');
 const files = require('./routes/files');
 const chat = require('./routes/chat');
 const shop = require('./routes/shop');
+const orders = require('./routes/orders');
 
 const PORT = 3000;
 const HOST = '0.0.0.0';
@@ -45,6 +46,11 @@ router
     .post('/api/product/add', products.add.bind(products))
     .post('/api/product/update', products.update.bind(products))
     .post('/api/product/delete', products.delete.bind(products));
+
+router
+    .post('/api/order/list', orders.list.bind(orders))
+    .post('/api/order/updateStatus', orders.updateStatus.bind(orders))
+    .post('/api/order/finish', orders.finish.bind(orders));
 
 router
     .post('/api/owner/add', owners.add.bind(owners))

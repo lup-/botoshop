@@ -1,6 +1,8 @@
 const {getDb} = require('../modules/Database');
 const moment = require('moment');
 const {getInfoByShop} = require("../modules/BotInfo");
+const {restartBot} = require('../modules/BotHttp');
+
 
 const COLLECTION_NAME = 'shops';
 const ITEM_NAME = 'shop';
@@ -34,6 +36,9 @@ module.exports = {
         let response = {};
         response[ITEM_NAME] = item;
         response.bot = bot;
+
+        let restart = await restartBot(item);
+        response.restart = restart;
 
         ctx.body = response;
     }

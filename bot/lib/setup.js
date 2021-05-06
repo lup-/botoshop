@@ -134,9 +134,11 @@ class Injector {
             }
 
             let botId = ctx.botInfo.id;
-            let chatId = ctx.chat.id;
+            let chatId = ctx.chat ? ctx.chat.id : null;
 
-            await cleanMessages(botId, chatId, ctx.telegram);
+            if (chatId) {
+                await cleanMessages(botId, chatId, ctx.telegram);
+            }
 
             return next();
         });

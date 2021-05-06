@@ -1,22 +1,26 @@
 const { Scenes } = require('telegraf');
 const { BaseScene } = Scenes;
 
-const { menu, escapeHTML } = require('../lib/helpers');
+const { menu, menuWithPayment, escapeHTML } = require('../lib/helpers');
+const shortid = require('shortid');
 
 const EMPTY_TEXT = `Похоже тут пока что ничего нет. 
 
 Попробуйте задать другие категории для поиска.`;
 
 
-function itemMenu(index, ctx) {
+async function itemMenu(index, ctx, isInvoice = false) {
     let profile = ctx.session.profile || {};
     let favoriteIds = ctx.profile.getFavoriteIds();
 
-    let categoryIds = ctx.profile.getSelectedCategoryIds();
-    let totalItems = ctx.shop.getProductsCount(categoryIds);
+    let totalItems = getProductsCount(ctx);
     let hasNext = index < totalItems-1;
     let hasPrev = index > 0;
-    let item = ctx.shop.getProductAtIndex(index, categoryIds);
+    let item = await getProductAtIndex(ctx, index);
+    let totalPrice = item.price;
+    if (item.shippingPrice > 0) {
+        totalPrice += item.shippingPrice;
+    }
     let isFavorite = favoriteIds && favoriteIds.indexOf(item.id) !== -1;
     let hasSubmenu = favoriteIds.length > 0;
 
@@ -34,7 +38,10 @@ function itemMenu(index, ctx) {
         : {code: '_skip', text: '➖' }
     );
 
-    buttons.push(actionButton);
+    if (!isInvoice) {
+        buttons.push(actionButton);
+    }
+
     buttons.push({code: 'favourite', text: isFavorite ? '☑ ⭐' : '⭐'});
 
     buttons.push(hasNext
@@ -54,7 +61,7 @@ function itemMenu(index, ctx) {
 
     buttons.push({code: 'settings', text: '🔧'});
 
-    return menu(buttons, 4);
+    return menuWithPayment(`Купить за ${totalPrice} руб`, buttons, isInvoice ? 3 : 4);
 }
 function productDescription(product) {
     return escapeHTML(`<b>${product.title}</b>
@@ -68,10 +75,35 @@ function noItemsMenu() {
     return menu([{code: 'settings', text: '🔧'}, {code: 'menu', text: '↩'}]);
 }
 
+async function getProductAtIndex(ctx, currentIndex) {
+    let catalogType = ctx.scene.state.type || null;
+
+    if (catalogType === 'favorite') {
+        return ctx.profile.getFavoriteIndex(currentIndex);
+    }
+    else {
+        let categoryIds = ctx.profile.getSelectedCategoryIds();
+        return ctx.shop.getProductAtIndex(currentIndex, categoryIds);
+    }
+}
+
+function getProductsCount(ctx) {
+    let catalogType = ctx.scene.state.type || null;
+
+    if (catalogType === 'favorite') {
+        let favorite = ctx.profile.getFavoriteIds();
+        return favorite.length;
+    }
+    else {
+        let categoryIds = ctx.profile.getSelectedCategoryIds();
+        let count = ctx.shop.getProductsCount(categoryIds);
+        return count;
+    }
+}
+
 async function replyWithProduct(ctx) {
     let currentIndex = ctx.session.index || 0;
-    let categoryIds = ctx.profile.getSelectedCategoryIds();
-    let product = await ctx.shop.getProductAtIndex(currentIndex, categoryIds);
+    let product = await getProductAtIndex(ctx, currentIndex);
 
     let hasResults = product && product.id;
     if (!hasResults) {
@@ -86,11 +118,11 @@ async function replyWithProduct(ctx) {
 
     let image = product.photos && product.photos[0] ? product.photos[0] : false;
     let itemText = productDescription(product);
-    let messageMenu = itemMenu(currentIndex, ctx);
+    let messageMenu = await itemMenu(currentIndex, ctx);
     let withPhoto = image && image.src;
 
     if (withPhoto) {
-        let photoExtra = itemMenu(currentIndex, ctx);
+        let photoExtra = await itemMenu(currentIndex, ctx);
         photoExtra.parse_mode = 'html';
         photoExtra.caption = itemText;
 
@@ -107,14 +139,62 @@ async function replyWithProduct(ctx) {
         );
     }
 }
+async function replyWithInvoice(ctx) {
+    let currentIndex = ctx.session.index || 0;
+    let product = await getProductAtIndex(ctx, currentIndex);
+
+    let hasResults = product && product.id;
+    if (!hasResults) {
+        ctx.session.index = 0;
+        if (currentIndex === 0) {
+            return ctx.replyWithDisposable('replyWithHTML', EMPTY_TEXT, noItemsMenu());
+        }
+        else {
+            return ctx.scene.reenter();
+        }
+    }
+
+    let image = product.photos && product.photos[0] ? product.photos[0] : false;
+    let messageMenu = await itemMenu(currentIndex, ctx, true);
+
+    let invoice = {
+        title: product.title,
+        description: escapeHTML(product.description),
+        payload: product.id,
+        provider_token: ctx.shop.getProviderToken(),
+        currency: 'RUB',
+        need_name: ctx.shop.getSetting('needName') || false,
+        need_phone_number: ctx.shop.getSetting('needPhone') || false,
+        need_email: ctx.shop.getSetting('needEmail') || false,
+        need_shipping_address: product.needsShipping || false,
+        prices: [
+            {label: 'Товар', amount: product.price*100}
+        ],
+    }
+
+    if (product.needsShipping) {
+        let shippingPrice = product.shippingPrice || 0;
+        invoice.prices.unshift({label: 'Доставка', amount: shippingPrice * 100});
+    }
+
+    if (image && image.src) {
+        invoice.photo_url = image.src;
+    }
+
+    return await ctx.safeReply(
+        ctx => ctx.replyWithDisposable('replyWithInvoice', invoice, messageMenu)
+    );
+}
+
 
 module.exports = function () {
     const scene = new BaseScene('discover');
 
     scene.enter(async ctx => {
         ctx.session.index = ctx.session.index || 0;
+        let isYooKassaMode = ctx.shop.useYooKassa();
 
-        return replyWithProduct(ctx);
+        return isYooKassaMode ? replyWithProduct(ctx) : replyWithInvoice(ctx);
     });
 
     scene.start(ctx => ctx.scene.enter('menu'));
@@ -130,8 +210,7 @@ module.exports = function () {
     });
 
     scene.action('go_next', ctx => {
-        let categoryIds = ctx.profile.getSelectedCategoryIds();
-        let maxNum = ctx.shop.getProductsCount(categoryIds)-1;
+        let maxNum = getProductsCount(ctx)-1;
         let index = ctx.session.index || 0;
         let hasNext = index < maxNum;
 
@@ -145,8 +224,7 @@ module.exports = function () {
     });
 
     scene.action('random', ctx => {
-        let categoryIds = ctx.profile.getSelectedCategoryIds();
-        let maxNum = ctx.shop.getProductsCount(categoryIds)-1;
+        let maxNum = getProductsCount(ctx)-1;
 
         let index = ctx.session.index || 0;
         let randomIndex = false;

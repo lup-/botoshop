@@ -16,7 +16,8 @@ module.exports = function () {
             return ctx.scene.enter('discover');
         }
 
-        let newPayment = await payment.addPaymentAndSaveToDb(ctx, item);
+        //let newPayment = await payment.addPaymentAndSaveToDb(ctx, item);
+        let newPayment = await payment.addTgPaymentAndSaveToDb(ctx, item);
         let text = `После нажатия на кнопку вы будете направлены на страницу для совершения оплаты.
 
 Пожалуйста, используйте кнопку эту оплаты только один раз и дождитесь сообщения о статусе оплаты`
