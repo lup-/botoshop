@@ -36,12 +36,18 @@ module.exports = class Shop {
 
     async loadProducts() {
         let db = await getDb();
-        this.products = await db.collection('products').find({shopId: this.getId()}).toArray();
+        this.products = await db.collection('products').find({
+            shopId: this.getId(),
+            deleted: {$in: [null, false]},
+        }).toArray();
     }
 
     async loadCategories() {
         let db = await getDb();
-        this.categories = await db.collection('categories').find({shopId: this.getId()}).toArray();
+        this.categories = await db.collection('categories').find({
+            shopId: this.getId(),
+            deleted: {$in: [null, false]},
+        }).toArray();
     }
 
     getCategoryProducts(categoryIds) {
