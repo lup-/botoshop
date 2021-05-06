@@ -60,6 +60,15 @@ module.exports = class Shop {
         });
     }
 
+    searchProducts(query) {
+        let lcQuery = query.toLowerCase();
+
+        return this.products.filter(product => {
+            let titleMatches = product.title.toLowerCase().indexOf( lcQuery ) !== -1;
+            return titleMatches;
+        })
+    }
+
     getProductAtIndex(index, categoryIds = []) {
         let products = this.getCategoryProducts(categoryIds);
         return products[index];

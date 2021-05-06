@@ -1,7 +1,8 @@
 const {getDb} = require('../lib/database');
 const setupBot = require('../lib/setup');
 const Payment = require('../managers/Payment');
-const {menu} = require('../lib/helpers');
+const {menu, escapeHTML} = require('../lib/helpers');
+const {makeInvoice} = require('../lib/product');
 
 module.exports = class BotManager {
     constructor() {
@@ -59,6 +60,36 @@ module.exports = class BotManager {
                 }
                 else {
                     next();
+                }
+            })
+            .addRoute('on', 'inline_query', async ctx => {
+                try {
+                    let foundProducts = ctx.shop.searchProducts(ctx.inlineQuery.query);
+                    let top5 = foundProducts.slice(0, 5);
+
+                    let results = [];
+
+                    for (const product of top5) {
+                        let thumb_url = product.photos && product.photos[0] ? product.photos[0].src : null;
+                        let {invoice, messageMenu} = await makeInvoice(ctx, product);
+
+                        let result = {
+                            type: 'article',
+                            id: product.id,
+                            title: `${product.title} за ${product.price} руб`,
+                            thumb_url,
+                            description: escapeHTML(product.description),
+                            input_message_content: invoice,
+                            reply_markup: messageMenu
+                        }
+
+                        results.push(result);
+                    }
+
+                    return ctx.answerInlineQuery(results);
+                }
+                catch (e) {
+                    console.log(e);
                 }
             })
             .addRoute('on', 'pre_checkout_query', ctx => {
