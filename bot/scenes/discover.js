@@ -90,7 +90,7 @@ module.exports = function () {
         return ctx.scene.enter('payment', {item});
     });
 
-    scene.action('_skip', ctx => {});
+    scene.action('_skip', ctx => ctx.scene.reenter());
 
     return scene;
 }
