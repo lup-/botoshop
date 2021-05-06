@@ -122,7 +122,7 @@ async function makeInvoice(ctx, product = null) {
 
     let invoice = {
         title: product.title,
-        description: escapeHTML(product.description),
+        description: escapeHTML(product.description) || '-',
         payload: product.id,
         provider_token: ctx.shop.getProviderToken(),
         currency: 'RUB',
