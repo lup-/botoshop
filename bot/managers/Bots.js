@@ -1,6 +1,7 @@
 const {getDb} = require('../lib/database');
 const setupBot = require('../lib/setup');
 const Payment = require('../managers/Payment');
+const {Telegraf} = require('telegraf');
 const {menu, escapeHTML} = require('../lib/helpers');
 const {makeInvoice} = require('../lib/product');
 
@@ -38,7 +39,7 @@ module.exports = class BotManager {
             .addScenes()
             .addDisclaimer(settings.description, ctx => ctx.scene.enter('menu'))
             .addRoute('on', 'message', async (ctx, next) => {
-                let isSuccessfulPayment = ctx.update && ctx.update.message && typeof(ctx.update.message.successful_payment) != 'undefined';
+                let isSuccessfulPayment = ctx.update && ctx.update.message && typeof (ctx.update.message.successful_payment) != 'undefined';
                 if (isSuccessfulPayment) {
                     const payment = new Payment();
                     let savedPayment = await payment.addTgPaymentAndSaveToDb(ctx);
@@ -170,7 +171,7 @@ module.exports = class BotManager {
 
     async launchBots() {
         await this.loadBots();
-        this.runningBots = await Promise.all( this.allShops.map(this.createBot.bind(this)) );
+        this.runningBots = await Promise.all(this.allShops.map(this.createBot.bind(this)));
         return this.runningBotsInfo();
     }
 
@@ -185,7 +186,7 @@ module.exports = class BotManager {
         let newShopIds = allShopIds.filter(shopId => runningBotShopIds.indexOf(shopId) === -1);
         if (newShopIds.length > 0) {
             let newShops = this.allShops.filter(shop => newShopIds.indexOf(shop.id) !== -1);
-            let newRunningShops = await Promise.all( newShops.map(this.createBot.bind(this)) );
+            let newRunningShops = await Promise.all(newShops.map(this.createBot.bind(this)));
             this.runningBots = this.runningBots.concat(newRunningShops);
         }
 
@@ -234,5 +235,17 @@ module.exports = class BotManager {
     async restartAll() {
         await this.stopAllBots();
         return this.launchBots();
+    }
+
+    async getBotInfoByShop(shop) {
+        let settings = shop.settings || {};
+        let token = settings.botToken || null;
+
+        if (!token) {
+            return null;
+        }
+
+        const bot = new Telegraf(token);
+        return bot.telegram.getMe();
     }
 }

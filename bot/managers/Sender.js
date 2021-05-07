@@ -16,10 +16,11 @@ module.exports = class Sender {
         this.id = mailingId;
         this.mailing = false;
         this.bot = false;
+        this.shop = false;
         this.chunkSize = 5;
     }
 
-    async init(mailing = false, bot = false, blockedHandler = false) {
+    async init(mailing = false, bot = false, shop = false, blockedHandler = false) {
         if (mailing) {
             this.mailing = mailing;
         }
@@ -28,6 +29,7 @@ module.exports = class Sender {
         }
 
         this.bot = bot;
+        this.shop = shop;
 
         if (blockedHandler) {
             this.blockedHandler = blockedHandler;
@@ -37,7 +39,7 @@ module.exports = class Sender {
     }
 
     getTelegram() {
-        let token = this.bot.token;
+        let token = this.shop.settings.botToken;
         return new Telegraf(token, {telegram: {apiRoot: API_ROOT}}).telegram;
     }
 
@@ -53,7 +55,8 @@ module.exports = class Sender {
         let db = await getDb();
         return db.collection('mailingQueue').find({
             mailing: this.id,
-            bot: this.bot.botId,
+            bot: this.bot.id,
+            shopId: this.shop.id,
             status: STATUS_NEW,
         }).limit(chunkSize).toArray();
     }
@@ -116,7 +119,7 @@ module.exports = class Sender {
         let telegram = this.getTelegram();
 
         try {
-            response = await sendMailingMessage(telegram, chat.chatId, this.getMessage(), this.mailing, this.bot.botId);
+            response = await sendMailingMessage(telegram, chat.chatId, this.getMessage(), this.mailing, this.bot.id);
             if (this.id) {
                 if (!response) {
                     await this.setChatFailed(chat, false);

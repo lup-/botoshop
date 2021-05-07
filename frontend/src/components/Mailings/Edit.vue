@@ -6,21 +6,6 @@
                     <v-card-title>{{isNew ? 'Новая рассылка' : 'Редактирование рассылки'}}</v-card-title>
                     <v-card-text>
                         <v-form autocomplete="off">
-                            <v-row class="mt-4">
-                                <v-col cols="12">
-                                    <v-select
-                                            label="Боты для рассылки"
-                                            :items="bots"
-                                            item-text="username"
-                                            item-value="id"
-                                            v-model="item.bots"
-                                            multiple
-                                            chips
-                                            deletable-chips
-                                    ></v-select>
-                                </v-col>
-                            </v-row>
-
                             <v-row>
                                 <v-col cols="12" md="6">
                                     <v-menu
@@ -222,9 +207,6 @@
             }
         },
         async created() {
-            if (this.bots.length === 0) {
-                await this.$store.dispatch('bot/loadItems');
-            }
             this.updateMailingDate();
 
             if (this.itemId) {
@@ -329,9 +311,6 @@
             },
         },
         computed: {
-            bots() {
-                return this.$store.state.bot.list;
-            },
             itemId() {
                 return this.$route.params && this.$route.params.id
                     ? this.$route.params.id || false

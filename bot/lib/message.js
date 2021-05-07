@@ -28,8 +28,7 @@ function getButtons(message, extra = {}, stageId = null, mailingId = null, chatI
             : `mailing:${mailingId}:${index}`;
 
         if (isLink) {
-            let url = makeButtonUrl(button, stageId, chatId, botId);
-            return {text: button.text, url};
+            return {text: button.text, url: button.target};
         }
         else if (isPoll) {
             return {text: button.text, code: `poll/${button.answerIndex}/${button.nextStepIndex}`};

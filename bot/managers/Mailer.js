@@ -1,4 +1,5 @@
 const {Telegraf} = require('telegraf');
+const Bots = require('./Bots');
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const MANAGER_CHAT_ID = process.env.MANAGER_CHAT_ID;
 const tg = new Telegraf(BOT_TOKEN).telegram;
@@ -60,8 +61,9 @@ module.exports = class Mailer {
         }
 
         let db = await getDb();
-        let bots = await this.getMailingBots(mailing);
-        let botTlgIds = bots.map(bot => bot.botId);
+        let shop = await this.getMailingShop(mailing);
+        let bots = await this.getShopBots(shop);
+        let botTlgIds = bots.map(bot => bot.id);
 
         let foundUsers = await db.collection('users').find({
             botId: {$in: botTlgIds},
@@ -71,6 +73,7 @@ module.exports = class Mailer {
         return foundUsers.map(user => ({
             mailing: mailing.id,
             bot: user.botId,
+            shopId: shop.id,
             userId: user.user.id,
             chatId: user.chat.id,
             status: STATUS_NEW
@@ -177,10 +180,21 @@ module.exports = class Mailer {
         return this.activeSenders.find(item => item.mailing.id === mailingId && item.bot.id === botId) || false;
     }
 
-    async getMailingBots(mailing) {
-        let botIds = mailing.bots;
+    async getMailingShop(mailing) {
+        let shopId = mailing.shopId;
         let db = await getDb();
-        return db.collection('bots').find({ id: {$in: botIds} }).toArray();
+        let shop = await db.collection('shops').findOne({id: shopId});
+        return shop;
+    }
+
+    async getShopBots(shop) {
+        let botManager = new Bots();
+        let bot = await botManager.getBotInfoByShop(shop);
+        if (!bot) {
+            return [];
+        }
+
+        return [bot];
     }
 
     async startSending(mailing) {
@@ -188,7 +202,8 @@ module.exports = class Mailer {
         await this.initProgress(mailing);
 
         return new Promise(async resolve => {
-            let bots = await this.getMailingBots(mailing);
+            let shop = await this.getMailingShop(mailing);
+            let bots = await this.getShopBots(shop);
             let botMailerPromises = [];
 
             for (const botIndex in bots) {
@@ -200,7 +215,7 @@ module.exports = class Mailer {
                 }
 
                 let sender = new Sender(mailing.id);
-                await sender.init(mailing, bot, this.blockedHandler);
+                await sender.init(mailing, bot, shop, this.blockedHandler);
 
                 this.activeSenders.push({mailing, bot, sender});
                 botMailerPromises.push(new Promise(async resolveBot => {
