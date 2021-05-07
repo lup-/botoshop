@@ -70,7 +70,9 @@ module.exports = class BotManager {
                     let results = [];
 
                     for (const product of top5) {
-                        let thumb_url = product.photos && product.photos[0] ? product.photos[0].src : null;
+                        let thumb_url = product.photos && product.photos[0]
+                            ? encodeURI(product.photos[0].src)
+                            : null;
                         let {invoice, messageMenu} = await makeInvoice(ctx, product);
 
                         let result = {

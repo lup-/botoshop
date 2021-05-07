@@ -141,7 +141,7 @@ async function makeInvoice(ctx, product = null) {
     }
 
     if (image && image.src) {
-        invoice.photo_url = image.src;
+        invoice.photo_url = encodeURI(image.src);
     }
 
     return {invoice, messageMenu};
