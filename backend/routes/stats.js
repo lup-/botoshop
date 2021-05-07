@@ -1,152 +1,265 @@
 const {getDb} = require('../modules/Database');
-const {getInfoByShop} = require('../modules/BotInfo');
+const {getInfoByShop} = require("../modules/BotInfo");
+const clone = require('lodash.clonedeep');
 const moment = require('moment');
 
 module.exports = {
-    async getBotId(ctx) {
-        let shop = ctx.request.body && ctx.request.body.shop
-            ? ctx.request.body.shop || false
-            : false;
-        let botInfo = await getInfoByShop(shop);
-        return botInfo ? botInfo.id : null;
+    getDates(start, end) {
+        let datesCount = moment.unix(end).diff(moment.unix(start), 'd');
+        let dates = Array(datesCount).fill(0).map((_, index) => moment.unix(start).add(index, 'd').format('DD.MM.YYYY'));
+        return dates;
     },
-    async details(ctx) {
-        let botId = this.getBotId(ctx);
-        let tz = ctx.request.body && ctx.request.body.tz
-            ? ctx.request.body.tz || false
-            : false;
 
-        let defaultRange = {start: moment().startOf('d').unix(), end: moment().endOf('d').unix()};
-        let range = ctx.request.body && ctx.request.body.range
-            ? ctx.request.body.range || defaultRange
-            : defaultRange;
+    addMissingDates(start, end, data, emptyItem) {
+        let dates = this.getDates(start, end);
 
-        let defaultScale = 'H';
-        let scale = ctx.request.body && ctx.request.body.scale
-            ? ctx.request.body.scale || defaultScale
-            : defaultScale;
+        let allDatesData = [];
+        for (const date of dates) {
+            let dateItem = data.find(item => item.date === date);
+            if (!dateItem) {
+                dateItem = clone(emptyItem);
+                dateItem.date = date;
+            }
 
-        let formats = [
-            {scale: 'Y', slot: '%Y"', tag: '%Y', momentTag: 'YYYY', step: 'y'},
-            {scale: 'M', slot: '%Y%m', tag: '%m.%Y', momentTag: 'MM.YYYY', step: 'month'},
-            {scale: 'D', slot: '%Y%m%d', tag: '%d.%m.%Y', momentTag: 'DD.MM.YYYY', step: 'd'},
-            {scale: 'H', slot: '%Y%m%d%H', tag: '%H:00, %d.%m.%Y', momentTag: 'HH:00, DD.MM.YYYY', step: 'h'},
-        ];
+            allDatesData.push(dateItem);
+        }
 
-        let format = formats.find(item => item.scale === scale) || formats[3];
+        return allDatesData;
+    },
 
-        let start = moment.unix(range.start);
-        let tagsCount = moment.unix(range.end).diff(moment.unix(range.start), format.step);
-        let steps = Array(tagsCount).fill(0).map((_, index) => start.clone().add(index, format.step));
-        let tags = steps.map(step => step.format(format.momentTag));
-        let unixSteps = steps.map(step => step.unix());
+    async getUserStats(start, end, botId) {
+        let db = await getDb();
+        let newUsers = await db.collection('users').aggregate([
+            { $match: {botId} },
+            { $match: {$and: [
+                        {registered: {$gte: start}},
+                        {registered: {$lte: end}},
+                    ]} },
+            { $addFields: {
+                    createdDate: { $dateToString: {
+                            format: "%d.%m.%Y",
+                            date: {$toDate: {$multiply: ["$registered", 1000]}},
+                        }
+                    }
+                }},
+            { $group: {
+                    _id: "$createdDate",
+                    date: {$first: "$createdDate"},
+                    count: {$sum: 1},
+                }},
+        ]).toArray();
 
-        let projectQuery = unixSteps.reduce( (fields, time, index) => {
-            let key = `date_group_${index}`;
-            fields[key] = {"$cond": [ { "$lte": [ "$targetDate", time ] }, 1, 0 ]};
-            return fields;
-        }, {} );
+        let blockedUsers = await db.collection('users').aggregate([
+            { $match: {botId} },
+            { $match: {$and: [
+                        {blocked: {$gte: start}},
+                        {blocked: {$lte: end}},
+                    ]} },
+            { $addFields: {
+                    blockedDate: { $dateToString: {
+                            format: "%d.%m.%Y",
+                            date: {$toDate: {$multiply: ["$blocked", 1000]}},
+                        }
+                    }
+                }},
+            { $group: {
+                    _id: "$blockedDate",
+                    date: {$first: "$blockedDate"},
+                    count: {$sum: 1},
+                }},
+        ]).toArray();
 
-        let groupQuery = unixSteps.reduce( (fields, time, index) => {
-            let fieldKey = `date_group_${index}`;
-            let key = `count_${index}`;
-            fields[key] = {"$sum": `$${fieldKey}`};
-            return fields;
-        }, {'_id': '1'} );
+        let baseCount = await db.collection('users').count({
+            botId,
+            $and: [
+                {registered: {$lt: start}},
+                {$or: [
+                    {blocked: {$in: [null, false]}},
+                    {blocked: {$gte: start}}
+                ]}
+            ],
+        });
+
+        let dateUsers = [];
+        let users = baseCount;
+        let dates = this.getDates(start, end);
+
+        for (const date of dates) {
+            let newUsersData = newUsers.find(item => item.date === date);
+            let blockedUsersData = blockedUsers.find(item => item.date === date);
+
+            let newUsersCount = newUsersData ? newUsersData.count : 0;
+            let blockedUsersCount = blockedUsersData ? blockedUsersData.count : 0;
+            dateUsers.push({date, users, new: newUsersCount, blocked: blockedUsersCount});
+
+            users = users + newUsersCount - blockedUsersCount;
+        }
+
+        return dateUsers;
+    },
+
+    async dashboard(ctx) {
+        let shop = ctx.request.body.shop;
+        let bot = null;
+        if (shop) {
+            bot = await getInfoByShop(shop);
+        }
+
+        if (!bot || !shop) {
+            ctx.body = {sales: [], users: []};
+            return;
+        }
+
+        let start = moment().subtract(7, 'day').startOf('d').unix();
+        let end = moment().endOf('d').unix();
+        let dateFilter = {$and: [
+                {created: {$gte: start}},
+                {created: {$lte: end}},
+                {status: 'succeeded'},
+            ]};
 
         let db = await getDb();
-        let users = db.collection('users');
-        let refs = db.collection('refs');
-        let activity = db.collection('activity');
-
-        let totalUsersResult = await users.aggregate([
-            {$match: {botId}},
-            {$set: {targetDate: "$registered"}},
-            {$project: projectQuery},
-            {$group: groupQuery}
+        let sales = await db.collection('payments').aggregate([
+            { $match: {shopId: shop.id} },
+            { $match: dateFilter },
+            { $addFields: {
+                    createdDate: { $dateToString: {
+                            format: "%d.%m.%Y",
+                            date: {$toDate: {$multiply: ["$created", 1000]}},
+                        }
+                    }
+                }},
+            { $group: {
+                    _id: "$createdDate",
+                    date: {$first: "$createdDate"},
+                    totalSum: {$sum: "$price"},
+                }},
         ]).toArray();
 
-        let usersResult = await users.aggregate([
-            {$match: {botId}},
-            {$match: {$or: [
-                {blocked: {$in: [null, false]}},
-                {$and: [ {blocked: true}, {blockedSince: {$gt: range.end}} ]}
-            ]}},
-            {$match: {$and: [{registered: {$gte: range.start}}, {registered: {$lt: range.end}}]}},
-            {$set: {registered_date: {$toDate: {$multiply: ["$registered", 1000]}}}},
-            {$set: {
-                    timeslot: { $dateToString: {date: "$registered_date", format: format.slot} },
-                    tag: {$dateToString: {date: {$min: "$registered_date"}, format: format.tag} }
-                }
-            },
-            {$group: {"_id": "$timeslot", "count": {$sum: 1}, "tag": {$first: "$tag"}}},
-            {$sort: {"tag": 1}}
-        ]).toArray();
+        let dateUsers = await this.getUserStats(start, end, bot.id);
+        let dates = this.getDates(start, end);
 
-        let refsResult = await refs.aggregate([
-            {$match: botId},
-            {$match: {$and: [{date: {$gte: range.start}}, {date: {$lt: range.end}}]}},
-            {$set: {registered_date: {$toDate: {$multiply: ["$date", 1000]}}}},
-            {$set: {
-                    timeslot: { $dateToString: {date: "$registered_date", format: format.slot} },
-                    tag: {$dateToString: {date: {$min: "$registered_date"}, format: format.tag} }
-                }
-            },
-            {$group: {"_id": {$concat: ["$timeslot", ":", "$ref"]}, "count": {$sum: 1}, "tag": {$first: "$tag"}, "ref": {$first: "$ref"}}},
-            {$sort: {"tag": 1}}
-        ]).toArray();
-
-        let activeUsersResult = await activity.aggregate([
-            {$match: botId},
-            {$match: {$and: [{date: {$gte: range.start}}, {date: {$lt: range.end}}]}},
-            {$set: {date_date: {$toDate: {$multiply: ["$date", 1000]}}}},
-            {$set: {
-                    timeslot: { $dateToString: {date: "$date_date", format: format.slot} },
-                    tag: {$dateToString: {date: {$min: "$date_date"}, format: format.tag} }
-                }
-            },
-            {$group: {"_id": "$timeslot", "count": {$sum: 1}, "tag": {$first: "$tag"}}},
-            {$sort: {"tag": 1}}
-        ]).toArray();
-
-        let refNames = refsResult.map(item => item.ref).filter((ref, index, all) => all.indexOf(ref) === index);
-
-        let stats = tags.map((tag, index) => {
-            let userCount = usersResult.find(item => item.tag === tag);
-            let activeUserCount = activeUsersResult.find(item => item.tag === tag);
-
-            let count = userCount && userCount['count'] ? userCount['count'] : 0;
-            let total = totalUsersResult && totalUsersResult[0] ? totalUsersResult[0][`count_${index}`] || 0 : 0;
-            let active = activeUserCount && activeUserCount['count'] ? activeUserCount['count'] : 0;
-
-            return {tag, count, active, total};
+        let dateSales = dates.map(date => {
+            let salesData = sales.find(item => item.date === date);
+            let sum = salesData ? salesData.totalSum : 0;
+            return  {date, sum}
         });
 
-        let refStats = refNames.map(refName => {
-            let stats = tags.map(tag => {
-                let item = refsResult.find(item => item.tag === tag && item.ref === refName);
-                let count = item && item['count'] ? item['count'] : 0;
-                return {tag, count};
-            });
+        ctx.body = {sales: dateSales, users: dateUsers};
+    },
 
-            return {ref: refName, stats};
+    async sales(ctx) {
+        let shop = ctx.request.body.shop;
+        let bot = null;
+        let days = ctx.request.body && typeof (ctx.request.body.days) === 'number'
+            ? parseInt(ctx.request.body.days)
+            : 7;
+
+        if (shop) {
+            bot = await getInfoByShop(shop);
+        }
+
+        if (!bot || !shop) {
+            ctx.body = {sales: [], categories: [], products: []};
+            return;
+        }
+
+        let start = moment().subtract(days, 'day').startOf('d').unix();
+        let end = moment().endOf('d').unix();
+        let dateFilter = {$and: [
+            {created: {$gte: start}},
+            {created: {$lte: end}},
+            {status: 'succeeded'},
+        ]};
+
+        let db = await getDb();
+        let sales = await db.collection('payments').aggregate([
+            { $match: {shopId: shop.id} },
+            { $match: dateFilter },
+            { $addFields: {
+                    createdDate: { $dateToString: {
+                            format: "%d.%m.%Y",
+                            date: {$toDate: {$multiply: ["$created", 1000]}},
+                        }
+                    }
+            }},
+            { $group: {
+                    _id: "$createdDate",
+                    date: {$first: "$createdDate"},
+                    totalSum: {$sum: "$price"},
+                    ordersCount: {$sum: 1},
+                    products: {$addToSet: "$item.id"}
+            }},
+            { $addFields: {productCount: {$size: '$products'}} }
+        ]).toArray();
+
+        sales = this.addMissingDates(start, end, sales, {
+            totalSum: 0,
+            ordersCount: 0,
+            products: [],
+            productCount: 0,
         });
 
-        let noRefsCount = stats.map(tagTotalStats => {
-            let totalTagRefCount = refStats.reduce((sum, refStat) => {
-                let tagRefItem = refStat.stats.find(item => item.tag === tagTotalStats.tag);
-                if (tagRefItem) {
-                    sum += tagRefItem.count;
-                }
+        let categories = await db.collection('payments').aggregate([
+            { $match: {shopId: shop.id} },
+            { $match: dateFilter },
+            { $unwind: "$item.categories" },
+            { $group: {
+                    _id: "$item.categories",
+                    count: {$sum: 1}
+                }},
+            { $lookup: {
+                    from: 'categories',
+                    localField: '_id',
+                    foreignField: 'id',
+                    as: 'category'
+                }},
+            { $unwind: "$category" },
+            { $project: {id: "$_id", name: "$category.title", value: "$count"} },
+            { $sort: {value: -1} }
+        ]).toArray();
 
-                return sum;
-            }, 0);
+        let products = await db.collection('payments').aggregate([
+            { $match: {shopId: shop.id} },
+            { $match: dateFilter },
+            { $group: {
+                    _id: "$item.id",
+                    count: {$sum: 1}
+                }},
+            { $lookup: {
+                    from: 'products',
+                    localField: '_id',
+                    foreignField: 'id',
+                    as: 'product'
+                }},
+            { $unwind: "$product" },
+            { $project: {id: "$_id", name: "$product.title", value: "$count"} },
+            { $sort: {value: -1} }
+        ]).toArray();
 
-            return {tag: tagTotalStats.tag, count: tagTotalStats.count - totalTagRefCount};
-        });
+        ctx.body = {sales, categories, products};
+    },
 
-        refStats.push({ref: false, stats: noRefsCount});
+    async users(ctx) {
+        let shop = ctx.request.body.shop;
+        let bot = null;
+        let days = ctx.request.body &&  typeof (ctx.request.body.days) === 'number'
+            ? parseInt(ctx.request.body.days)
+            : 7;
 
-        ctx.body = {stats, refStats};
+        if (shop) {
+            bot = await getInfoByShop(shop);
+        }
+
+        if (!bot || !shop) {
+            ctx.body = {users: []};
+            return;
+        }
+
+        let start = moment().subtract(days, 'day').startOf('d').unix();
+        let end = moment().endOf('d').unix();
+
+        let users = await this.getUserStats(start, end, bot.id);
+        ctx.body = {users}
     }
 }

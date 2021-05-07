@@ -28,5 +28,19 @@ module.exports = {
         }
 
         return result;
+    },
+
+    async botStatus() {
+        let result = null;
+
+        try {
+            let {data} = await axios.get(BOT_HTTP_INTERFACE_URL + '/status');
+            result = data;
+        }
+        catch (e) {
+            result = {error: e.toString()};
+        }
+
+        return result;
     }
 }

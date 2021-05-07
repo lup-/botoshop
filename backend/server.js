@@ -24,9 +24,6 @@ const router = new Router();
 const upload = multer({dest: UPLOAD_DIR});
 
 router
-    .post('/api/stats/details', stats.details.bind(stats));
-
-router
     .post('/api/mailing/list', mailings.list.bind(mailings))
     .post('/api/mailing/add', mailings.add.bind(mailings))
     .post('/api/mailing/update', mailings.update.bind(mailings))
@@ -68,7 +65,9 @@ router
     .post('/api/user/list', users.list.bind(users));
 
 router
-    .post('/api/shop/update', shop.update.bind(shop));
+    .post('/api/shop/update', shop.update.bind(shop))
+    .post('/api/shop/restart', shop.restartBot.bind(shop))
+    .post('/api/shop/status', shop.botStatus.bind(shop));
 
 
 router
@@ -80,6 +79,11 @@ router
     .post('/api/chat/reply', chat.reply.bind(chat))
     .get('/api/chat/:id', chat.load.bind(chat))
     .post('/api/chat/:id', chat.load.bind(chat));
+
+router
+    .post('/api/stats/dashboard', stats.dashboard.bind(stats))
+    .post('/api/stats/sales', stats.sales.bind(stats))
+    .post('/api/stats/users', stats.users.bind(stats));
 
 app
     .use(bodyParser({

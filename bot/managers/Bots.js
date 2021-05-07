@@ -109,7 +109,7 @@ module.exports = class BotManager {
     }
 
     stopBotByShopId(shopIdToStop) {
-        let botIndex = this.runningBots.findIndex(bot => bot.shop ? bot.shop.id === shopIdToStop : false);
+        let botIndex = this.runningBots.findIndex(bot => bot && bot.shop ? bot.shop.id === shopIdToStop : false);
         if (botIndex !== -1) {
             let runningBot = this.runningBots[botIndex];
             if (!runningBot) {
@@ -151,7 +151,9 @@ module.exports = class BotManager {
     async restartBot(shopToRestart) {
         let stopResult = await this.stopBot(shopToRestart);
         let restartedBot = await this.createBot(shopToRestart);
-        this.runningBots.push(restartedBot);
+        if (restartedBot) {
+            this.runningBots.push(restartedBot);
+        }
         return {stopResult, restartedBot};
     }
 
@@ -221,7 +223,7 @@ module.exports = class BotManager {
     }
 
     async runningBotsInfo() {
-        return this.runningBots.map(telegraf => telegraf.botInfo);
+        return this.runningBots.map(telegraf => telegraf ? telegraf.botInfo : null);
     }
 
     async stopAllBots() {

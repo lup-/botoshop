@@ -3,7 +3,7 @@ const { BaseScene } = Scenes;
 
 const {menuWithControls, clone} = require('../lib/helpers');
 
-const SETTINGS_TEXT = `Выберите категорию курсов. Можно выбирать несколько`;
+const SETTINGS_TEXT = `Выберите интересующую вас категорию. Можно отмечать несколько`;
 
 function isSelectedRecursive(selectedCategoryIds, category) {
     let hasSelectedIds = selectedCategoryIds && selectedCategoryIds.length > 0;

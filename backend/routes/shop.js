@@ -1,8 +1,7 @@
 const {getDb} = require('../modules/Database');
 const moment = require('moment');
 const {getInfoByShop} = require("../modules/BotInfo");
-const {restartBot} = require('../modules/BotHttp');
-
+const {restartBot, botStatus} = require('../modules/BotHttp');
 
 const COLLECTION_NAME = 'shops';
 const ITEM_NAME = 'shop';
@@ -41,5 +40,31 @@ module.exports = {
         response.restart = restart;
 
         ctx.body = response;
+    },
+    async restartBot(ctx) {
+        let shop = ctx.request.body.shop;
+        let restart = await restartBot(shop);
+
+        ctx.body = {restart};
+    },
+    async botStatus(ctx) {
+        let shop = ctx.request.body.shop;
+        if (!shop) {
+            ctx.body = {runnging: false, bot: null};
+            return;
+        }
+
+        let bot = await getInfoByShop(shop);
+        let status = await botStatus();
+        if (!bot || !status) {
+            ctx.body = {running: false, bot};
+            return;
+        }
+
+        let running = status.bots.reduce((running, runningBot) => {
+            return running || runningBot.id === bot.id;
+        }, false);
+
+        ctx.body = {running, bot};
     }
 }

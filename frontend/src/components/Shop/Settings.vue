@@ -65,6 +65,11 @@
                     <v-divider></v-divider>
                     <v-card-actions>
                         <v-btn large color="primary" @click="save">Сохранить</v-btn>
+                        <v-spacer></v-spacer>
+                        <v-chip small class="mr-4" :color="botStatus && botStatus.running ? 'green' : 'red'">
+                            {{botStatus && botStatus.running ? `Бот запущен: @${botStatus.bot.username}` : `Бот остановлен`}}
+                        </v-chip>
+                        <v-btn @click="restartBot">Перегрузить бота</v-btn>
                     </v-card-actions>
                 </v-card>
             </v-col>
@@ -73,21 +78,54 @@
 </template>
 
 <script>
+    import axios from "axios";
+
     export default {
         data() {
             return {
                 settings: {},
+                botStatus: null,
             }
         },
         created() {
             this.settings = this.stateSettings;
+            this.loadStatus();
         },
         methods: {
             async save() {
                 await this.$store.dispatch('shop/saveSettings', this.settings);
+                await this.loadStatus();
             },
+            async loadStatus() {
+                try {
+                    let {data: status} = await axios.post('/api/shop/status', {shop: this.shop});
+                    this.botStatus = status;
+                }
+                catch (e) {
+                    this.botStatus = null;
+                }
+            },
+            async restartBot() {
+                try {
+                    let {data} = await axios.post('/api/shop/restart', {shop: this.shop});
+                    let restart = data.restart;
+                    let isSuccess = !data.error && !restart.error && restart.bot && restart.bot.id;
+                    if (isSuccess) {
+                        this.$store.commit('setSuccessMessage', 'Бот успешно перезапущен!');
+                    }
+                    else {
+                        this.$store.commit('setErrorMessage', `Ошибка перезапуска бота (${data.error || restart.error || '-'})!`);
+                    }
+                }
+                catch (e) {
+                    this.$store.commit('setErrorMessage', `Ошибка перезапуска бота (${e.toString() || '-'})!`);
+                }
+            }
         },
         computed: {
+            shop() {
+                return this.$store.state.shop.current;
+            },
             stateSettings() {
                 return this.$store.state.shop.current && this.$store.state.shop.current.settings
                     ? this.$store.state.shop.current.settings

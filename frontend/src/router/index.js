@@ -2,7 +2,9 @@ import Vue from 'vue';
 import VueRouter from 'vue-router';
 
 import Home from "../components/Home";
-import Details from "../components/Stats/Details";
+import Dashboard from "@/components/Stats/Dashboard";
+import SalesStat from  "@/components/Stats/Sales";
+import UsersStat from  "@/components/Stats/Users";
 import MailingsList from "../components/Mailings/List";
 import MailingEdit from "../components/Mailings/Edit";
 import PaymentsList from "../components/Payments/List";
@@ -27,7 +29,9 @@ const routes = [
     { name: 'login', path: '/login', component: Login },
     { name: 'register', path: '/register', component: Register },
     { name: 'settings', path: '/settings', component: SettingsEdit, meta: {requiresAuth: true, group: 'settings'}},
-    { name: 'statsDetails', path: '/stats/', component: Details, meta: {requiresAuth: true, group: 'statsDetails'} },
+    { name: 'statDashboard', path: '/stats/', component: Dashboard, meta: {requiresAuth: true, group: 'stats'} },
+    { name: 'statSales', path: '/stats/sales/', component: SalesStat, meta: {requiresAuth: true, group: 'stats'} },
+    { name: 'statUsers', path: '/stats/users/', component: UsersStat, meta: {requiresAuth: true, group: 'stats'} },
     { name: 'mailingsList', path: '/mailings/', component: MailingsList, meta: {requiresAuth: true, group: 'mailingsList'} },
     { name: 'mailingNew', path: '/mailings/new', component: MailingEdit, meta: {requiresAuth: true, group: 'mailingsList'} },
     { name: 'mailingEdit', path: '/mailings/:id', component: MailingEdit, meta: {requiresAuth: true, group: 'mailingsList'} },
