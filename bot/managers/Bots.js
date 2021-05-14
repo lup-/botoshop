@@ -104,7 +104,12 @@ module.exports = class BotManager {
         let bot = app.get();
         bot.on()
         bot.shop = shop;
-        await bot.launch();
+        try {
+            await bot.launch();
+        }
+        catch (e) {
+            return null;
+        }
 
         return bot;
     }
