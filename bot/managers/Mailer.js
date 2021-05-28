@@ -188,6 +188,10 @@ module.exports = class Mailer {
     }
 
     async getShopBots(shop) {
+        if (!shop) {
+            return [];
+        }
+
         let botManager = new Bots();
         let bot = await botManager.getBotInfoByShop(shop);
         if (!bot) {
